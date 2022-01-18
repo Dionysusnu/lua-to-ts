@@ -2,6 +2,9 @@ use crate::prelude::*;
 
 pub fn transform_expression(expr: &lua_ast::Expression) -> Expr {
 	match expr {
+		lua_ast::Expression::BinaryOperator { lhs, binop, rhs } => {
+			transform_binary_expression(binop, lhs, rhs)
+		}
 		lua_ast::Expression::Parentheses {
 			contained: _,
 			expression,
