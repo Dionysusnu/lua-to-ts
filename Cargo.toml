@@ -9,3 +9,6 @@ version = "0.1.0"
 full_moon = {version = "0.14.0", features = ["roblox"]}
 swc = "0.116.5"
 swc_ecma_codegen = "0.89.0"
+
+[profile.dev.package.full_moon]
+opt-level = 2
