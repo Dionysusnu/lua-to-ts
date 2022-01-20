@@ -23,7 +23,15 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 		}
 		lua_ast::Stmt::LocalFunction(declaration) => transform_local_function(declaration),
 		lua_ast::Stmt::NumericFor(numeric_for) => transform_numeric_for(numeric_for),
-		lua_ast::Stmt::Repeat(repeat) => skip_stmt("repeat not yet implemented", repeat),
+		lua_ast::Stmt::Repeat(repeat) => Stmt::DoWhile(DoWhileStmt {
+			span: Default::default(),
+			body: boxed(transform_block(repeat.block())),
+			test: boxed(Expr::Unary(UnaryExpr {
+				span: Default::default(),
+				op: UnaryOp::Bang,
+				arg: boxed(transform_expression(repeat.until())),
+			})),
+		}),
 		lua_ast::Stmt::While(while_stmt) => {
 			skip_stmt("while loops not yet implemented", while_stmt)
 		}
