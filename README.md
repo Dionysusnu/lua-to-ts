@@ -2,5 +2,6 @@
 
 This tool converts Lua code to TS automatically, including the conversion of common standards to their TS equivalents.
 
-## WIP
-This tool is very much under construction and should not be used for anything meaningful yet.
+### Known issues
+- swc_ecma_codegen, the tool used for outputting TypeScript, does not format much. The output may look ugly. Just run prettier.
+- Lua truthiness is not converted! You should enable the roblox-ts eslint plugin's lua-truthiness rule and fix anything it points out.
