@@ -36,6 +36,32 @@ pub fn transform_value(value: &lua_ast::Value) -> Expr {
 				optional: false,
 			})
 		}
+		lua_ast::Value::Symbol(token)
+			if matches!(
+				token.token().token_type(),
+				tokenizer::TokenType::Symbol {
+					symbol: tokenizer::Symbol::True
+				}
+			) =>
+		{
+			Expr::Lit(Lit::Bool(Bool {
+				span: Default::default(),
+				value: true,
+			}))
+		}
+		lua_ast::Value::Symbol(token)
+			if matches!(
+				token.token().token_type(),
+				tokenizer::TokenType::Symbol {
+					symbol: tokenizer::Symbol::False
+				}
+			) =>
+		{
+			Expr::Lit(Lit::Bool(Bool {
+				span: Default::default(),
+				value: false,
+			}))
+		}
 		lua_ast::Value::Var(var) => transform_var(var),
 		_ => skip("Unknown value variant", value),
 	}
