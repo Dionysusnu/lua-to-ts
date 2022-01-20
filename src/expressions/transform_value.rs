@@ -62,6 +62,20 @@ pub fn transform_value(value: &lua_ast::Value) -> Expr {
 				value: false,
 			}))
 		}
+		lua_ast::Value::Symbol(token)
+			if matches!(
+				token.token().token_type(),
+				tokenizer::TokenType::Symbol {
+					symbol: tokenizer::Symbol::Ellipse
+				}
+			) =>
+		{
+			Expr::Ident(Ident {
+				span: Default::default(),
+				optional: false,
+				sym: JsWord::from("...args"),
+			})
+		}
 		lua_ast::Value::Var(var) => transform_var(var),
 		_ => skip("Unknown value variant", value),
 	}
