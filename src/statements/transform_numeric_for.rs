@@ -1,7 +1,6 @@
 use crate::prelude::*;
 
 pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
-	eprintln!("transform_numeric_for: {:?}", numeric_for.step());
 	let op = if let Some(expr) = numeric_for.step() {
 		if let lua_ast::Expression::Value {
 			value,
