@@ -40,13 +40,9 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 							}),
 							type_params: Some(TsTypeParamInstantiation {
 								span: Default::default(),
-								params: vec![boxed(TsType::TsLitType(TsLitType {
+								params: vec![boxed(TsType::TsTupleType(TsTupleType {
 									span: Default::default(),
-									lit: TsLit::Tpl(TsTplLitType {
-										span: Default::default(),
-										quasis: vec![],
-										types: vec![],
-									}),
+									elem_types: vec![],
 								}))],
 							}),
 						})),
