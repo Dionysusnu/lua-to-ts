@@ -37,10 +37,9 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 			test: boxed(transform_expression(while_stmt.condition())),
 			body: boxed(transform_block(while_stmt.block())),
 		}),
-		lua_ast::Stmt::CompoundAssignment(compound_assignment) => skip_stmt(
-			"compound assignments not yet implemented",
-			compound_assignment,
-		),
+		lua_ast::Stmt::CompoundAssignment(compound_assignment) => {
+			transform_compound_assignment(compound_assignment)
+		}
 		lua_ast::Stmt::ExportedTypeDeclaration(declaration) => {
 			skip_stmt("exported type declaration not yet implemented", declaration)
 		}

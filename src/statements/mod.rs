@@ -4,6 +4,8 @@ pub mod transform_block;
 pub use transform_block::transform_block;
 pub mod transform_block_statements;
 pub use transform_block_statements::transform_block_statements;
+pub mod transform_compound_assignment;
+pub use transform_compound_assignment::transform_compound_assignment;
 pub mod transform_function_declaration;
 pub use transform_function_declaration::transform_function_declaration;
 pub mod transform_generic_for;
