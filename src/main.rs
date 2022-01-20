@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	}
 	let filename = &args[1];
 
-	let contents = fs::read_to_string(filename).unwrap();
+	let contents = fs::read_to_string(filename)?;
 
 	let ast = full_moon::parse(&contents)?;
 
