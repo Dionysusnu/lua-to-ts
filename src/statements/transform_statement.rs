@@ -11,9 +11,7 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 		lua_ast::Stmt::FunctionDeclaration(declaration) => {
 			transform_function_declaration(declaration)
 		}
-		lua_ast::Stmt::GenericFor(generic_for) => {
-			skip_stmt("generic for loops not yet implemented", generic_for)
-		}
+		lua_ast::Stmt::GenericFor(generic_for) => transform_generic_for(generic_for),
 		lua_ast::Stmt::If(if_stmt) => Stmt::If(IfStmt {
 			span: Default::default(),
 			test: boxed(transform_expression(if_stmt.condition())),

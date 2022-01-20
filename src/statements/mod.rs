@@ -6,6 +6,8 @@ pub mod transform_block_statements;
 pub use transform_block_statements::transform_block_statements;
 pub mod transform_function_declaration;
 pub use transform_function_declaration::transform_function_declaration;
+pub mod transform_generic_for;
+pub use transform_generic_for::transform_generic_for;
 pub mod transform_last_statement;
 pub use transform_last_statement::transform_last_statement;
 pub mod transform_local_assignment;
