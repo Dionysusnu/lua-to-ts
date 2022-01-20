@@ -32,9 +32,11 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 				arg: boxed(transform_expression(repeat.until())),
 			})),
 		}),
-		lua_ast::Stmt::While(while_stmt) => {
-			skip_stmt("while loops not yet implemented", while_stmt)
-		}
+		lua_ast::Stmt::While(while_stmt) => Stmt::While(WhileStmt {
+			span: Default::default(),
+			test: boxed(transform_expression(while_stmt.condition())),
+			body: boxed(transform_block(while_stmt.block())),
+		}),
 		lua_ast::Stmt::CompoundAssignment(compound_assignment) => skip_stmt(
 			"compound assignments not yet implemented",
 			compound_assignment,
