@@ -21,13 +21,8 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 		lua_ast::Stmt::LocalAssignment(local_assignment) => {
 			transform_local_assignment(local_assignment)
 		}
-		lua_ast::Stmt::LocalFunction(declaration) => skip_stmt(
-			"local function declarations not yet implemented",
-			declaration,
-		),
-		lua_ast::Stmt::NumericFor(numeric_for) => {
-			skip_stmt("numeric for loops not yet implemented", numeric_for)
-		}
+		lua_ast::Stmt::LocalFunction(declaration) => transform_local_function(declaration),
+		lua_ast::Stmt::NumericFor(numeric_for) => transform_numeric_for(numeric_for),
 		lua_ast::Stmt::Repeat(repeat) => skip_stmt("repeat not yet implemented", repeat),
 		lua_ast::Stmt::While(while_stmt) => {
 			skip_stmt("while loops not yet implemented", while_stmt)
