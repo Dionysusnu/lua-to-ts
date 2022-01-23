@@ -36,7 +36,7 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 					init: {
 						if expressions.len() != 1 {
 							Some(boxed(skip(
-								"multiple expressions in variable assignment not implemented",
+								"multiple expressions in variable assignment not supported",
 								local_assignment,
 							)))
 						} else {

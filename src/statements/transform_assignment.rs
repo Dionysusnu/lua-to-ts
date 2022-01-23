@@ -25,7 +25,7 @@ pub fn transform_assignment(assignment: &lua_ast::Assignment) -> Stmt {
 				right: {
 					if expressions.len() != 1 {
 						boxed(skip(
-							"multiple expressions in assignment not implemented",
+							"multiple expressions in assignment not supported",
 							assignment,
 						))
 					} else {
