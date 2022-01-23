@@ -1,6 +1,7 @@
 # lua-to-ts
 
 This tool converts Lua code to TS automatically, including the conversion of common standards to their TS equivalents.
+Code that fails to be converted will be transformed into a call to `error` with some information regarding the reason it failed.
 
 ### Known issues
 - swc_ecma_codegen, the tool used for outputting TypeScript, does not format much. The output may look ugly. Just run prettier.
