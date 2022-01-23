@@ -10,4 +10,4 @@ Code that fails to be converted will be transformed into a call to `error` with 
 ### Unsupported features
 - Lua multiple assignments (`a, b = 1, 2`)
 - For loops with multiple expressions (`for _ in a, b do`)
-- Numeric for loops with a non-literal step argument (`for i = 1, 10, a`)
+- Numeric for loops with a non-literal step argument (`for i = 1, 10, a do`)
