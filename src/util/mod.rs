@@ -40,3 +40,15 @@ pub fn skip_stmt(reason: &str, node: &(impl std::fmt::Debug + ToString)) -> Stmt
 		expr: boxed(skip(reason, node)),
 	})
 }
+
+pub fn skip_type(reason: &str, node: &(impl std::fmt::Debug + ToString)) -> TsType {
+	let mut message = String::from("[lua-to-ts] Failed to transform: `");
+	// eprintln!("{:?}", node);
+	message.push_str(&node.to_string());
+	message.push_str("` because: ");
+	message.push_str(reason);
+	TsType::TsLitType(TsLitType {
+		span: Default::default(),
+		lit: TsLit::Str(make_string(&message)),
+	})
+}

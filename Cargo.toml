@@ -6,7 +6,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-full_moon = {version = "0.14.0", features = ["roblox"]}
+full_moon = {version = "0.15.0", features = ["roblox"]}
 swc = "0.116.5"
 swc_ecma_codegen = "0.89.0"
 

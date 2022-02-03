@@ -1,23 +1,36 @@
 use crate::prelude::*;
 
-fn skip_type(reason: &str, node: &(impl std::fmt::Debug + ToString)) -> TsTypeParam {
-	let mut message = String::from("[lua-to-ts] Failed to transform: `");
-	// eprintln!("{:?}", node);
-	message.push_str(&node.to_string());
-	message.push_str("` because: ");
-	message.push_str(reason);
-	TsTypeParam {
+fn skipped_type_name() -> Ident {
+	Ident {
 		span: Default::default(),
-		name: Ident {
-			span: Default::default(),
-			optional: false,
-			sym: JsWord::from("FailedToTransformType"),
-		},
-		constraint: Some(boxed(TsType::TsLitType(TsLitType {
-			span: Default::default(),
-			lit: TsLit::Str(make_string(&message)),
-		}))),
-		default: None,
+		optional: false,
+		sym: JsWord::from("FailedToTransformType"),
+	}
+}
+
+fn transform_type_generic_name(
+	generic: &lua_ast::types::GenericParameterInfo,
+) -> (Ident, Option<Box<TsType>>) {
+	match generic {
+		lua_ast::types::GenericParameterInfo::Name(token) => (
+			Ident {
+				span: Default::default(),
+				optional: false,
+				sym: JsWord::from(token.token().to_string()),
+			},
+			None,
+		),
+		lua_ast::types::GenericParameterInfo::Variadic { .. } => (
+			skipped_type_name(),
+			Some(boxed(skip_type(
+				"variadic type generic not supported",
+				generic,
+			))),
+		),
+		_ => (
+			skipped_type_name(),
+			Some(boxed(skip_type("unknown type generic kind", generic))),
+		),
 	}
 }
 
@@ -35,21 +48,16 @@ pub fn transform_type_declaration(type_declaration: &lua_ast::types::TypeDeclara
 			params: generic
 				.generics()
 				.iter()
-				.map(|generic| match generic {
-					lua_ast::types::GenericDeclarationParameter::Name(token) => TsTypeParam {
+				.map(|generic| {
+					let (name, constraint) = transform_type_generic_name(generic.parameter());
+					TsTypeParam {
 						span: Default::default(),
-						name: Ident {
-							span: Default::default(),
-							optional: false,
-							sym: JsWord::from(token.token().to_string()),
-						},
-						constraint: None,
-						default: None,
-					},
-					lua_ast::types::GenericDeclarationParameter::Variadic { .. } => {
-						skip_type("variadic type generic not supported", generic)
+						name,
+						constraint,
+						default: generic
+							.default_type()
+							.map(|default_type| boxed(transform_type(default_type))),
 					}
-					_ => skip_type("unknown type generic kind", generic),
 				})
 				.collect(),
 		}),
