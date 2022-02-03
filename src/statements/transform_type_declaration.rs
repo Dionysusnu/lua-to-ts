@@ -1,8 +1,11 @@
 use crate::prelude::*;
 
 fn skip_type(reason: &str, node: &(impl std::fmt::Debug + ToString)) -> TsTypeParam {
-	let mut message = String::from(reason);
+	let mut message = String::from("[lua-to-ts] Failed to transform: `");
+	// eprintln!("{:?}", node);
 	message.push_str(&node.to_string());
+	message.push_str("` because: ");
+	message.push_str(reason);
 	TsTypeParam {
 		span: Default::default(),
 		name: Ident {
