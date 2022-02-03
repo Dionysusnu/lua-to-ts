@@ -1,5 +1,46 @@
 use crate::prelude::*;
 
+fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Expr) {
+	let default = || (None, transform_expression(original_expression));
+	let value = match original_expression {
+		lua_ast::Expression::Value {
+			value,
+			type_assertion: _,
+		} => value,
+		_ => return default(),
+	};
+	let function_call = match **value {
+		lua_ast::Value::FunctionCall(ref function_call) => function_call,
+		_ => return default(),
+	};
+	let token = match function_call.prefix() {
+		lua_ast::Prefix::Name(token) => token,
+		_ => return default(),
+	};
+	let call = if token.token().to_string() == "unpack" {
+		function_call.suffixes().next().unwrap()
+	} else {
+		return default();
+	};
+	let function_args = match call {
+		lua_ast::Suffix::Call(lua_ast::Call::AnonymousCall(function_args)) => function_args,
+		_ => unreachable!(),
+	};
+	(
+		Some(()),
+		match function_args {
+			lua_ast::FunctionArgs::Parentheses {
+				arguments,
+				parentheses: _,
+			} => transform_expression(arguments.iter().next().unwrap()),
+			lua_ast::FunctionArgs::TableConstructor(table_constructor) => {
+				transform_table_constructor(table_constructor)
+			}
+			_ => skip("Unknown function args type", function_args),
+		},
+	)
+}
+
 pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 	let is_array = args
 		.fields()
@@ -39,58 +80,13 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 				.fields()
 				.iter()
 				.map(|field| {
-					if let lua_ast::Field::NoKey(mut expression) = field.clone() {
+					if let lua_ast::Field::NoKey(original_expression) = field {
+						let (spread, expression) = get_unpack_data(original_expression);
 						Some(ExprOrSpread {
 							// Detect usage of `unpack` in table constructor
 							// This needs to convert to the `...` spread operator in TS
-							spread: if let lua_ast::Expression::Value {
-								value,
-								type_assertion: _,
-							} = expression.clone()
-							{
-								if let lua_ast::Value::FunctionCall(function_call) = *value.clone()
-								{
-									if let lua_ast::Prefix::Name(token) = function_call.prefix() {
-										if token.token().to_string() == "unpack" {
-											let call = function_call.suffixes().next().unwrap();
-											if let lua_ast::Suffix::Call(
-												lua_ast::Call::AnonymousCall(function_args),
-											) = call
-											{
-												expression = match function_args {
-													lua_ast::FunctionArgs::Parentheses {
-														arguments,
-														parentheses: _,
-													} => arguments.iter().next().unwrap().clone(),
-													lua_ast::FunctionArgs::TableConstructor(
-														table_constructor,
-													) => lua_ast::Expression::Value {
-														value: boxed(
-															lua_ast::Value::TableConstructor(
-																table_constructor.clone(),
-															),
-														),
-														type_assertion: None,
-													},
-													_ => unreachable!("Unknown function args type"),
-												};
-												Some(Default::default())
-											} else {
-												unreachable!()
-											}
-										} else {
-											None
-										}
-									} else {
-										None
-									}
-								} else {
-									None
-								}
-							} else {
-								None
-							},
-							expr: boxed(transform_expression(&expression)),
+							spread: spread.map(|()| Default::default()),
+							expr: boxed(expression),
 						})
 					} else {
 						unreachable!("Checked to be all NoKey variant earlier")
