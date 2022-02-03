@@ -24,7 +24,7 @@ pub fn transform_expression(expr: &lua_ast::Expression) -> Expr {
 				Expr::TsAs(TsAsExpr {
 					span: Default::default(),
 					expr: boxed(expr),
-					type_ann: boxed(transform_type(type_assertion)),
+					type_ann: boxed(transform_type(type_assertion.cast_to())),
 				})
 			} else {
 				expr
