@@ -1,4 +1,4 @@
-pub use full_moon::{ast as lua_ast, tokenizer};
+pub use full_moon::{ast as lua_ast, node, tokenizer};
 
 pub use swc::atoms::JsWord;
 pub use swc::ecmascript::ast::*;
