@@ -18,11 +18,11 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 		} = expr
 		{
 			if let lua_ast::Expression::Value {
-				value,
+				ref value,
 				type_assertion: _,
-			} = *expression.clone()
+			} = **expression
 			{
-				if let lua_ast::Value::Number(_) = *value {
+				if let lua_ast::Value::Number(_) = **value {
 					Some(BinaryOp::GtEq)
 				} else {
 					None
