@@ -22,8 +22,6 @@ pub mod transform_string;
 pub use transform_string::transform_string;
 pub mod transform_table_constructor;
 pub use transform_table_constructor::transform_table_constructor;
-pub mod transform_type;
-pub use transform_type::transform_type;
 pub mod transform_unary;
 pub use transform_unary::transform_unary_expression;
 pub mod transform_value;

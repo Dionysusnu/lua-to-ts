@@ -69,3 +69,5 @@ pub fn skip_type(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToStr
 		lit: TsLit::Str(get_fail_string(reason, node)),
 	})
 }
+
+pub const REST_ARGS_NAME: &str = "_args";

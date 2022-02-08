@@ -20,5 +20,3 @@ pub mod transform_numeric_for;
 pub use transform_numeric_for::transform_numeric_for;
 pub mod transform_statement;
 pub use transform_statement::transform_statement;
-pub mod transform_type_declaration;
-pub use transform_type_declaration::transform_type_declaration;

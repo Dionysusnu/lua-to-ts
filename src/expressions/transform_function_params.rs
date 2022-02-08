@@ -1,31 +1,39 @@
 use crate::prelude::*;
 
-const REST_ARGS_NAME: &str = "args";
-
 pub fn transform_function_params<'a>(
 	params: impl Iterator<Item = &'a lua_ast::Parameter>,
+	mut types: impl Iterator<Item = Option<&'a lua_ast::types::TypeSpecifier>>,
 ) -> Vec<Pat> {
 	let mut has_args_or_ellipse = false;
 	params
 		.map(|param| match param {
-			lua_ast::Parameter::Name(name) => Pat::Ident(BindingIdent::from(Ident {
-				span: Default::default(),
-				sym: JsWord::from({
-					let name = name.token().to_string();
-					if name == "args" {
-						if has_args_or_ellipse {
-							return Pat::Expr(boxed(skip(
-								"Double use of args or ... in function parameters",
-								param,
-							)));
-						} else {
-							has_args_or_ellipse = true;
-						};
-					}
-					name
+			lua_ast::Parameter::Name(name) => Pat::Ident(BindingIdent {
+				id: Ident {
+					span: Default::default(),
+					sym: JsWord::from({
+						let name = name.token().to_string();
+						if name == REST_ARGS_NAME {
+							if has_args_or_ellipse {
+								return Pat::Expr(boxed(skip(
+									&format!(
+										"Double use of `{}` or ... in function parameters",
+										REST_ARGS_NAME
+									),
+									param,
+								)));
+							} else {
+								has_args_or_ellipse = true;
+							};
+						}
+						name
+					}),
+					optional: false,
+				},
+				type_ann: types.next().flatten().map(|t| TsTypeAnn {
+					span: Default::default(),
+					type_ann: boxed(transform_type(t.type_info())),
 				}),
-				optional: false,
-			})),
+			}),
 			lua_ast::Parameter::Ellipse(_) => {
 				if has_args_or_ellipse {
 					return Pat::Expr(boxed(skip(
@@ -38,7 +46,13 @@ pub fn transform_function_params<'a>(
 				Pat::Rest(RestPat {
 					span: Default::default(),
 					dot3_token: Default::default(),
-					type_ann: None,
+					type_ann: types.next().flatten().map(|t| TsTypeAnn {
+						span: Default::default(),
+						type_ann: boxed(TsType::TsArrayType(TsArrayType {
+							span: Default::default(),
+							elem_type: boxed(transform_type(t.type_info())),
+						})),
+					}),
 					arg: boxed(Pat::Ident(BindingIdent::from(Ident {
 						span: Default::default(),
 						sym: JsWord::from(REST_ARGS_NAME),

@@ -6,9 +6,12 @@ pub fn transform_value(value: &lua_ast::Value) -> Expr {
 			span: Default::default(),
 			is_async: false,
 			is_generator: false,
-			return_type: None,
-			type_params: None,
-			params: transform_function_params(body.parameters().iter()),
+			return_type: body.return_type().map(|t| TsTypeAnn {
+				span: Default::default(),
+				type_ann: boxed(transform_type(t.type_info())),
+			}),
+			type_params: transform_type_generic(body.generics()),
+			params: transform_function_params(body.parameters().iter(), body.type_specifiers()),
 			body: BlockStmtOrExpr::BlockStmt(BlockStmt {
 				span: Default::default(),
 				stmts: transform_block_statements(body.block()),
@@ -70,10 +73,11 @@ pub fn transform_value(value: &lua_ast::Value) -> Expr {
 				}
 			) =>
 		{
+			// Use ident hack because can't use ExprOrSpread
 			Expr::Ident(Ident {
 				span: Default::default(),
 				optional: false,
-				sym: JsWord::from("...args"),
+				sym: JsWord::from(format!("...{}", REST_ARGS_NAME)),
 			})
 		}
 		lua_ast::Value::Var(var) => transform_var(var),
