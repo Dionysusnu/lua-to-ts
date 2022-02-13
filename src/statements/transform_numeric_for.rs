@@ -52,11 +52,14 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 				span: Default::default(),
 				init: Some(boxed(transform_expression(numeric_for.start()))),
 				definite: false,
-				name: Pat::Ident(BindingIdent::from(Ident {
-					span: Default::default(),
-					optional: false,
-					sym: JsWord::from(numeric_for.index_variable().token().to_string()),
-				})),
+				name: Pat::Ident(BindingIdent {
+					type_ann: numeric_for.type_specifier().map(transform_type_specifier),
+					id: Ident {
+						span: Default::default(),
+						optional: false,
+						sym: JsWord::from(numeric_for.index_variable().token().to_string()),
+					},
+				}),
 			}],
 		})),
 		test: Some(boxed(Expr::Bin(BinExpr {

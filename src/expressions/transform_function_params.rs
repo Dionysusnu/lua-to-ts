@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 pub fn transform_function_params<'a>(
 	params: impl Iterator<Item = &'a lua_ast::Parameter>,
-	mut types: impl Iterator<Item = Option<&'a lua_ast::types::TypeSpecifier>>,
+	mut type_specifiers: impl Iterator<Item = Option<&'a lua_ast::types::TypeSpecifier>>,
 ) -> Vec<Pat> {
 	let mut has_args_or_ellipse = false;
 	params
@@ -29,10 +29,10 @@ pub fn transform_function_params<'a>(
 					}),
 					optional: false,
 				},
-				type_ann: types.next().flatten().map(|t| TsTypeAnn {
-					span: Default::default(),
-					type_ann: boxed(transform_type(t.type_info())),
-				}),
+				type_ann: type_specifiers
+					.next()
+					.flatten()
+					.map(transform_type_specifier),
 			}),
 			lua_ast::Parameter::Ellipse(_) => {
 				if has_args_or_ellipse {
@@ -46,18 +46,24 @@ pub fn transform_function_params<'a>(
 				Pat::Rest(RestPat {
 					span: Default::default(),
 					dot3_token: Default::default(),
-					type_ann: types.next().flatten().map(|t| TsTypeAnn {
+					type_ann: type_specifiers.next().flatten().map(|t| TsTypeAnn {
 						span: Default::default(),
+						// Lua rest param is the individual type
+						// TS requires array of individual type
 						type_ann: boxed(TsType::TsArrayType(TsArrayType {
 							span: Default::default(),
 							elem_type: boxed(transform_type(t.type_info())),
 						})),
 					}),
-					arg: boxed(Pat::Ident(BindingIdent::from(Ident {
-						span: Default::default(),
-						sym: JsWord::from(REST_ARGS_NAME),
-						optional: false,
-					}))),
+					arg: boxed(Pat::Ident(BindingIdent {
+						// type_ann already done above
+						type_ann: None,
+						id: Ident {
+							span: Default::default(),
+							sym: JsWord::from(REST_ARGS_NAME),
+							optional: false,
+						},
+					})),
 				})
 			}
 			_ => Pat::Expr(boxed(skip("Unknown parameter type", param))),

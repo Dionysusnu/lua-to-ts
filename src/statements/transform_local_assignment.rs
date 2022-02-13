@@ -8,15 +8,22 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 		decls: {
 			let names = local_assignment.names();
 			let expressions = local_assignment.expressions();
+			let mut type_specifiers = local_assignment.type_specifiers();
 			if local_assignment.equal_token().is_some() {
 				vec![VarDeclarator {
 					span: Default::default(),
 					definite: false,
 					name: if names.len() == 1 {
-						Pat::Ident(BindingIdent::from(Ident::new(
-							JsWord::from(names.iter().next().unwrap().token().to_string()),
-							Default::default(),
-						)))
+						Pat::Ident(BindingIdent {
+							type_ann: type_specifiers
+								.next()
+								.flatten()
+								.map(transform_type_specifier),
+							id: Ident::new(
+								JsWord::from(names.iter().next().unwrap().token().to_string()),
+								Default::default(),
+							),
+						})
 					} else {
 						Pat::Array(ArrayPat {
 							span: Default::default(),
@@ -25,10 +32,16 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 							elems: names
 								.iter()
 								.map(|name| {
-									Some(Pat::Ident(BindingIdent::from(Ident::new(
-										JsWord::from(name.token().to_string()),
-										Default::default(),
-									))))
+									Some(Pat::Ident(BindingIdent {
+										type_ann: type_specifiers
+											.next()
+											.flatten()
+											.map(transform_type_specifier),
+										id: Ident::new(
+											JsWord::from(name.token().to_string()),
+											Default::default(),
+										),
+									}))
 								})
 								.collect(),
 						})
@@ -54,10 +67,17 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 						span: Default::default(),
 						init: None,
 						definite: false,
-						name: Pat::Ident(BindingIdent::from(Ident::new(
-							JsWord::from(name.token().to_string()),
-							Default::default(),
-						))),
+						name: Pat::Ident(BindingIdent {
+							type_ann: local_assignment
+								.type_specifiers()
+								.next()
+								.flatten()
+								.map(transform_type_specifier),
+							id: Ident::new(
+								JsWord::from(name.token().to_string()),
+								Default::default(),
+							),
+						}),
 					})
 					.collect()
 			}
