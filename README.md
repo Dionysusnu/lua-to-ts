@@ -9,6 +9,7 @@ Code that fails to be converted will be transformed into a call to `error` with 
 - Arrow functions (generated from anonymous functions in Lua) do not render their return types. This seems to be a bug with swc's emitter.
 - The text inside "failed to convert" error calls may currently be wrong due to a [full_moon bug](https://github.com/Kampfkarren/full-moon/issues/161)
 - All variable declarations are `let`, regardless of redeclarations. Use eslint's `prefer-const` rule.
+- Type annotations from `for a: number in b do` are preserved, but disallowed by TS. They do parse correctly, but throw an error. Generally, these are unnecessary and can just be removed, but they are transformed for the sake of completeness.
 
 ### Unsupported features
 - Lua multiple assignments (`a, b = 1, 2`)
