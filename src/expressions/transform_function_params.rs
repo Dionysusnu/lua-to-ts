@@ -16,58 +16,58 @@ pub fn transform_function_params<'a>(
 ) -> Vec<Pat> {
 	let mut has_args_or_ellipse = false;
 	params
-		.map(|param| match param {
-			lua_ast::Parameter::Name(name) => Pat::Ident(BindingIdent {
-				id: Ident {
-					span: Default::default(),
-					sym: JsWord::from({
-						let name = name.token().to_string();
-						if name == REST_ARGS_NAME {
-							if has_args_or_ellipse {
-								return skip_double_rest(param);
-							} else {
-								has_args_or_ellipse = true;
-							};
-						}
-						name
-					}),
-					optional: false,
-				},
-				type_ann: type_specifiers
-					.next()
-					.flatten()
-					.map(transform_type_specifier),
-			}),
-			lua_ast::Parameter::Ellipse(_) => {
-				if has_args_or_ellipse {
-					return skip_double_rest(param);
-				} else {
-					has_args_or_ellipse = true;
-				};
-				Pat::Rest(RestPat {
-					span: Default::default(),
-					dot3_token: Default::default(),
-					type_ann: type_specifiers.next().flatten().map(|t| TsTypeAnn {
+		.map(|param| {
+			let type_specifier = type_specifiers.next().flatten();
+			match param {
+				lua_ast::Parameter::Name(name) => Pat::Ident(BindingIdent {
+					id: Ident {
 						span: Default::default(),
-						// Lua rest param is the individual type
-						// TS requires array of individual type
-						type_ann: boxed(TsType::TsArrayType(TsArrayType {
+						sym: JsWord::from({
+							let name = name.token().to_string();
+							if name == REST_ARGS_NAME {
+								if has_args_or_ellipse {
+									return skip_double_rest(param);
+								} else {
+									has_args_or_ellipse = true;
+								};
+							}
+							name
+						}),
+						optional: false,
+					},
+					type_ann: type_specifier.map(transform_type_specifier),
+				}),
+				lua_ast::Parameter::Ellipse(_) => {
+					if has_args_or_ellipse {
+						return skip_double_rest(param);
+					} else {
+						has_args_or_ellipse = true;
+					};
+					Pat::Rest(RestPat {
+						span: Default::default(),
+						dot3_token: Default::default(),
+						type_ann: type_specifier.map(|t| TsTypeAnn {
 							span: Default::default(),
-							elem_type: boxed(transform_type(t.type_info())),
+							// Lua rest param is the individual type
+							// TS requires array of individual type
+							type_ann: boxed(TsType::TsArrayType(TsArrayType {
+								span: Default::default(),
+								elem_type: boxed(transform_type(t.type_info())),
+							})),
+						}),
+						arg: boxed(Pat::Ident(BindingIdent {
+							// type_ann already done above
+							type_ann: None,
+							id: Ident {
+								span: Default::default(),
+								sym: JsWord::from(REST_ARGS_NAME),
+								optional: false,
+							},
 						})),
-					}),
-					arg: boxed(Pat::Ident(BindingIdent {
-						// type_ann already done above
-						type_ann: None,
-						id: Ident {
-							span: Default::default(),
-							sym: JsWord::from(REST_ARGS_NAME),
-							optional: false,
-						},
-					})),
-				})
+					})
+				}
+				_ => Pat::Expr(boxed(skip("Unknown parameter type", param))),
 			}
-			_ => Pat::Expr(boxed(skip("Unknown parameter type", param))),
 		})
 		.collect()
 }
