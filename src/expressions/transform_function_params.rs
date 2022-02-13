@@ -1,5 +1,15 @@
 use crate::prelude::*;
 
+fn skip_double_rest(param: &lua_ast::Parameter) -> Pat {
+	Pat::Expr(boxed(skip(
+		&format!(
+			"Double use of `{}` or ... in function parameters",
+			REST_ARGS_NAME
+		),
+		param,
+	)))
+}
+
 pub fn transform_function_params<'a>(
 	params: impl Iterator<Item = &'a lua_ast::Parameter>,
 	mut type_specifiers: impl Iterator<Item = Option<&'a lua_ast::types::TypeSpecifier>>,
@@ -14,13 +24,7 @@ pub fn transform_function_params<'a>(
 						let name = name.token().to_string();
 						if name == REST_ARGS_NAME {
 							if has_args_or_ellipse {
-								return Pat::Expr(boxed(skip(
-									&format!(
-										"Double use of `{}` or ... in function parameters",
-										REST_ARGS_NAME
-									),
-									param,
-								)));
+								return skip_double_rest(param);
 							} else {
 								has_args_or_ellipse = true;
 							};
@@ -36,10 +40,7 @@ pub fn transform_function_params<'a>(
 			}),
 			lua_ast::Parameter::Ellipse(_) => {
 				if has_args_or_ellipse {
-					return Pat::Expr(boxed(skip(
-						"Double use of args or ... in function parameters",
-						param,
-					)));
+					return skip_double_rest(param);
 				} else {
 					has_args_or_ellipse = true;
 				};
