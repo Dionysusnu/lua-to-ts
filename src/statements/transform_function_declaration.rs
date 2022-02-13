@@ -49,8 +49,11 @@ pub fn transform_function_declaration(declaration: &lua_ast::FunctionDeclaration
 					span: Default::default(),
 					is_async: false,
 					is_generator: false,
-					return_type: None,
-					type_params: None,
+					return_type: declaration
+						.body()
+						.return_type()
+						.map(transform_type_specifier),
+					type_params: transform_type_generic(declaration.body().generics()),
 					decorators: vec![],
 					params: transform_function_params(
 						declaration.body().parameters().iter(),
