@@ -42,7 +42,11 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 								span: Default::default(),
 								params: vec![boxed(TsType::TsTupleType(TsTupleType {
 									span: Default::default(),
-									elem_types: vec![],
+									elem_types: vec![TsTupleElement {
+										span: Default::default(),
+										label: None,
+										ty: skip_type("Can't infer return types", return_statement),
+									}],
 								}))],
 							}),
 						})),
