@@ -16,6 +16,8 @@ pub mod transform_local_assignment;
 pub use transform_local_assignment::transform_local_assignment;
 pub mod transform_local_function;
 pub use transform_local_function::transform_local_function;
+pub mod transform_module_block;
+pub use transform_module_block::transform_module_block;
 pub mod transform_numeric_for;
 pub use transform_numeric_for::transform_numeric_for;
 pub mod transform_statement;

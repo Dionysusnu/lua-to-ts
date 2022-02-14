@@ -45,10 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 			emitter
 				.emit_module(&Module {
-					body: transform_block_statements(ast.nodes())
-						.into_iter()
-						.map(ModuleItem::Stmt)
-						.collect(),
+					body: transform_module_block(ast.nodes()),
 					span: Default::default(),
 					shebang: None,
 				})
