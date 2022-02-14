@@ -165,42 +165,51 @@ pub fn transform_type(type_info: &lua_ast::types::TypeInfo) -> TsType {
 		lua_ast::types::TypeInfo::Tuple {
 			types,
 			parentheses: _,
-		} => TsType::TsTypeRef(TsTypeRef {
-			span: Default::default(),
-			type_name: TsEntityName::Ident(Ident {
-				span: Default::default(),
-				optional: false,
-				sym: JsWord::from("LuaTuple"),
-			}),
-			type_params: Some(TsTypeParamInstantiation {
-				span: Default::default(),
-				params: vec![boxed(TsType::TsTupleType(TsTupleType {
+		} => {
+			if types.len() == 1 {
+				TsType::TsParenthesizedType(TsParenthesizedType {
 					span: Default::default(),
-					elem_types: types
-						.iter()
-						.map(|type_info| TsTupleElement {
+					type_ann: boxed(transform_type(types.iter().next().unwrap())),
+				})
+			} else {
+				TsType::TsTypeRef(TsTypeRef {
+					span: Default::default(),
+					type_name: TsEntityName::Ident(Ident {
+						span: Default::default(),
+						optional: false,
+						sym: JsWord::from("LuaTuple"),
+					}),
+					type_params: Some(TsTypeParamInstantiation {
+						span: Default::default(),
+						params: vec![boxed(TsType::TsTupleType(TsTupleType {
 							span: Default::default(),
-							label: None,
-							ty: if let lua_ast::types::TypeInfo::Variadic {
-								type_info,
-								ellipse: _,
-							} = type_info
-							{
-								TsType::TsRestType(TsRestType {
+							elem_types: types
+								.iter()
+								.map(|type_info| TsTupleElement {
 									span: Default::default(),
-									type_ann: boxed(TsType::TsArrayType(TsArrayType {
-										span: Default::default(),
-										elem_type: boxed(transform_type(type_info)),
-									})),
+									label: None,
+									ty: if let lua_ast::types::TypeInfo::Variadic {
+										type_info,
+										ellipse: _,
+									} = type_info
+									{
+										TsType::TsRestType(TsRestType {
+											span: Default::default(),
+											type_ann: boxed(TsType::TsArrayType(TsArrayType {
+												span: Default::default(),
+												elem_type: boxed(transform_type(type_info)),
+											})),
+										})
+									} else {
+										transform_type(type_info)
+									},
 								})
-							} else {
-								transform_type(type_info)
-							},
-						})
-						.collect(),
-				}))],
-			}),
-		}),
+								.collect(),
+						}))],
+					}),
+				})
+			}
+		}
 		lua_ast::types::TypeInfo::Union {
 			left,
 			right,
