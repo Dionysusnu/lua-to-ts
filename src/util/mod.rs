@@ -13,29 +13,12 @@ pub fn make_string(content: &str) -> Str {
 	}
 }
 
-fn get_node_text(node: &impl node::Node) -> String {
-	let mut message = String::new();
-	let mut tokens = node.tokens().peekable();
-	while let Some(token_ref) = tokens.next() {
-		if tokens.peek().is_some() {
-			message.push_str(&token_ref.to_string());
-		} else {
-			for token in token_ref.leading_trivia() {
-				message.push_str(&token.to_string());
-			}
-			message.push_str(&token_ref.token().to_string());
-			break;
-		}
-	}
-	message
-}
-
-fn get_fail_string(reason: &str, node: &impl node::Node) -> Str {
+fn get_fail_string(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Str {
 	#[cfg(debug)]
 	eprintln!("{}: {:#?}", reason, node);
 	make_string(&format!(
 		"[lua-to-ts] Failed to transform: `{}` because: {}",
-		get_node_text(node),
+		node.to_string().trim(),
 		reason
 	))
 }
