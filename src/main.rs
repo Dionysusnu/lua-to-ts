@@ -7,7 +7,12 @@ mod prelude;
 use crate::prelude::*;
 
 use std::error::Error;
-use std::{env, fs, process};
+use std::{
+	env,
+	fs::{read_to_string, OpenOptions},
+	io::{self, Write},
+	path, process,
+};
 use swc::common::{sync::Lrc, SourceMap};
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
@@ -20,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	}
 	let filename = &args[1];
 
-	let contents = fs::read_to_string(filename)?;
+	let contents = read_to_string(filename)?;
 
 	let ast = full_moon::parse(&contents)?;
 
@@ -53,6 +58,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 		String::from_utf8_lossy(&buf).to_string()
 	};
 
+	let target = path::Path::new(filename).with_extension("ts");
+
+	let file = OpenOptions::new()
+		.write(true)
+		.create_new(true)
+		.open(target.clone());
+
+	if matches!(file, Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists) {
+		eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
+		process::exit(1);
+	}
+
+	file?.write_all(code.as_bytes())?;
 	print!("{}", code);
 
 	Ok(())
