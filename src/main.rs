@@ -56,18 +56,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 	};
 
 	let target = path::Path::new(filename).with_extension("ts");
-
 	let file = OpenOptions::new()
 		.write(true)
 		.create_new(true)
 		.open(&target);
 
-	if matches!(file, Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists) {
-		eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
-		process::exit(1);
-	}
+	// Handle common error cases gracefully
+	let mut file = match file {
+		Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
+			eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
+			process::exit(1);
+		}
+		file => file?,
+	};
 
-	file?.write_all(code.as_bytes())?;
+	file.write_all(code.as_bytes())?;
 	print!("{}", code);
 
 	Ok(())
