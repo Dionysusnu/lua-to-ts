@@ -1,7 +1,7 @@
 pub use full_moon::{ast as lua_ast, node, tokenizer};
 
-pub use swc::atoms::JsWord;
-pub use swc::ecmascript::ast::*;
+pub use swc_atoms::JsWord;
+pub use swc_ecma_ast::*;
 
 pub use crate::expressions::*;
 pub use crate::statements::*;

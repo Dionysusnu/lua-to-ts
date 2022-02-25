@@ -13,7 +13,7 @@ use std::{
 	io::{self, Write},
 	path, process,
 };
-use swc::common::{sync::Lrc, SourceMap};
+use swc_common::{sync::Lrc, SourceMap};
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 fn main() -> Result<(), Box<dyn Error>> {
