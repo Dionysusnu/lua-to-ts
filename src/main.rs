@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let file = OpenOptions::new()
 		.write(true)
 		.create_new(true)
-		.open(target.clone());
+		.open(&target);
 
 	if matches!(file, Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists) {
 		eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
