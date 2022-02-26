@@ -6,7 +6,15 @@ mod util;
 mod prelude;
 use crate::prelude::*;
 
-use std::error::Error;
+#[cfg(feature = "progressbar")]
+use console::style;
+#[cfg(feature = "progressbar")]
+use indicatif::{ProgressBar, ProgressStyle};
+#[cfg(feature = "progressbar")]
+use lazy_static::lazy_static;
+#[cfg(feature = "progressbar")]
+use std::convert::TryInto;
+
 use std::{
 	env,
 	fs::{read_to_string, OpenOptions},
@@ -16,7 +24,33 @@ use std::{
 use swc_common::{sync::Lrc, SourceMap};
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[cfg(feature = "progressbar")]
+lazy_static! {
+	static ref PROGRESS_BAR_STYLE: ProgressStyle = ProgressStyle::default_bar()
+		.template(
+			"{spinner:.cyan} [{elapsed:.dim}] {msg}... [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})\n{prefix}",
+		)
+		// For more spinners check out the cli-spinners project:
+		// https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
+		.tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+		.progress_chars("=>-");
+
+	static ref SPINNER_STYLE_RUNNING: ProgressStyle = ProgressStyle::default_spinner()
+		.tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
+		.template("{spinner:.cyan} [{elapsed:.dim}] {msg}...");
+
+	static ref SPINNER_STYLE_WAITING: ProgressStyle = ProgressStyle::default_spinner()
+		.tick_strings(&[".  ", ".. ", "...", "   "])
+		.template("{spinner:.cyan} {msg}");
+
+	static ref SPINNER_STYLE_FINISHED: ProgressStyle = ProgressStyle::default_spinner()
+		.template(format!("{} {{msg:.dim}}", style("✔").green()).as_str());
+
+	static ref SPINNER_STYLE_FAILED: ProgressStyle = ProgressStyle::default_spinner()
+		.template(format!("{} {{msg:.dim}}", style("❌").red()).as_str());
+}
+
+fn process_files() -> i32 {
 	let mut args = env::args();
 
 	if args.len() < 2 {
@@ -24,19 +58,56 @@ fn main() -> Result<(), Box<dyn Error>> {
 			"Usage: {} <filename>",
 			args.next().unwrap_or_else(|| "lua-to-ts".to_string())
 		);
-		process::exit(1);
+		process::exit(exitcode::USAGE);
 	}
 
 	// ignore filename of lua-to-ts itself
 	args.next();
-	for filename in args.progress() {
-		println!("Reading {}", filename);
-		let contents = read_to_string(&filename)?;
-		println!("Parsing {}", filename);
-		let ast = full_moon::parse(&contents)?;
-		println!("Transforming {}", filename);
+
+	let mut failure_messages = vec![];
+	let mut exit_code = exitcode::OK;
+
+	#[cfg(feature = "progressbar")]
+	{
+		let pb = ProgressBar::new(args.len().try_into().unwrap());
+		pb.set_style(PROGRESS_BAR_STYLE.clone());
+		let mut i = 0;
+	}
+	for filename in args {
+		#[cfg(feature = "progressbar")]
+		{
+			i += 1;
+			pb.set_position(i.try_into().unwrap());
+		}
+
+		#[cfg(feature = "progressbar")]
+		pb.set_message(format!("Reading {}", filename));
+		let contents = read_to_string(&filename);
+		let contents = if let Err(err) = contents {
+			exit_code = exitcode::NOINPUT;
+			failure_messages.push(format!("Error while reading `{}`: {:?}", filename, err));
+			continue;
+		} else {
+			contents.unwrap()
+		};
+
+		#[cfg(feature = "progressbar")]
+		pb.set_message(format!("Parsing {}", filename));
+		let ast = full_moon::parse(&contents);
+		let ast = if let Err(err) = ast {
+			exit_code = exitcode::DATAERR;
+			failure_messages.push(format!("Error while parsing `{}`: {}", filename, err));
+			continue;
+		} else {
+			ast.unwrap()
+		};
+
+		#[cfg(feature = "progressbar")]
+		pb.set_message(format!("Transforming {}", filename));
 		let body = transform_module_block(ast.nodes());
-		println!("Emitting {}", filename);
+
+		#[cfg(feature = "progressbar")]
+		pb.set_message(format!("Emitting {}", filename));
 		let cm = Lrc::new(SourceMap::default());
 		let code = {
 			let mut buf = vec![];
@@ -63,7 +134,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 			String::from_utf8_lossy(&buf).to_string()
 		};
 
-		println!("Writing {}", filename);
+		#[cfg(feature = "progressbar")]
+		pb.set_message(format!("Writing {}", filename));
 		let target = path::Path::new(&filename).with_extension("ts");
 		let file = OpenOptions::new()
 			.write(true)
@@ -73,23 +145,48 @@ fn main() -> Result<(), Box<dyn Error>> {
 		// Handle common error cases gracefully
 		let mut file = match file {
 			Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
-				eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
-				process::exit(1);
+				exit_code = exitcode::CANTCREAT;
+				failure_messages.push(format!(
+					"Refusing to overwrite `{}`",
+					target.to_string_lossy()
+				));
+				continue;
 			}
 			Err(err) => {
-				eprintln!(
-					"Errored while opening file handle for `{}`: {:#?} {}",
+				exit_code = exitcode::CANTCREAT;
+				failure_messages.push(format!(
+					"Errored while opening file handle for `{}`: {:?}",
 					target.to_string_lossy(),
-					err.source(),
 					err
-				);
-				process::exit(1);
+				));
+				continue;
 			}
 			Ok(file) => file,
 		};
 
-		file.write_all(code.as_bytes())?;
+		if let Err(err) = file.write_all(code.as_bytes()) {
+			exit_code = exitcode::IOERR;
+			failure_messages.push(format!(
+				"Errored while writing `{}`: {:?}",
+				target.to_string_lossy(),
+				err
+			));
+			continue;
+		};
+	}
+	#[cfg(feature = "progressbar")]
+	{
+		pb.set_style(SPINNER_STYLE_FINISHED.clone());
+		pb.finish_with_message("Processing");
 	}
 
-	Ok(())
+	if !failure_messages.is_empty() {
+		println!("{}", failure_messages.join("\n"));
+	}
+
+	exit_code
+}
+
+fn main() {
+	process::exit(process_files());
 }
