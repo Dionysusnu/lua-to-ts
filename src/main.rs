@@ -17,61 +17,79 @@ use swc_common::{sync::Lrc, SourceMap};
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let args: Vec<String> = env::args().collect();
+	let mut args = env::args();
 
 	if args.len() < 2 {
-		eprintln!("Usage: {} <filename>", args[0]);
+		eprintln!(
+			"Usage: {} <filename>",
+			args.next().unwrap_or_else(|| "lua-to-ts".to_string())
+		);
 		process::exit(1);
 	}
-	let filename = &args[1];
 
-	let contents = read_to_string(filename)?;
+	// ignore filename of lua-to-ts itself
+	args.next();
+	for filename in args.progress() {
+		println!("Reading {}", filename);
+		let contents = read_to_string(&filename)?;
+		println!("Parsing {}", filename);
+		let ast = full_moon::parse(&contents)?;
+		println!("Transforming {}", filename);
+		let body = transform_module_block(ast.nodes());
+		println!("Emitting {}", filename);
+		let cm = Lrc::new(SourceMap::default());
+		let code = {
+			let mut buf = vec![];
 
-	let ast = full_moon::parse(&contents)?;
+			{
+				let mut emitter = Emitter {
+					cfg: swc_ecma_codegen::Config {
+						..Default::default()
+					},
+					cm: cm.clone(),
+					comments: None,
+					wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
+				};
 
-	let cm = Lrc::new(SourceMap::default());
-	let code = {
-		let mut buf = vec![];
+				emitter
+					.emit_module(&Module {
+						body,
+						span: Default::default(),
+						shebang: None,
+					})
+					.unwrap();
+			}
 
-		{
-			let mut emitter = Emitter {
-				cfg: swc_ecma_codegen::Config {
-					..Default::default()
-				},
-				cm: cm.clone(),
-				comments: None,
-				wr: JsWriter::new(cm.clone(), "\n", &mut buf, None),
-			};
+			String::from_utf8_lossy(&buf).to_string()
+		};
 
-			emitter
-				.emit_module(&Module {
-					body: transform_module_block(ast.nodes()),
-					span: Default::default(),
-					shebang: None,
-				})
-				.unwrap();
-		}
+		println!("Writing {}", filename);
+		let target = path::Path::new(&filename).with_extension("ts");
+		let file = OpenOptions::new()
+			.write(true)
+			.create_new(true)
+			.open(&target);
 
-		String::from_utf8_lossy(&buf).to_string()
-	};
+		// Handle common error cases gracefully
+		let mut file = match file {
+			Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
+				eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
+				process::exit(1);
+			}
+			Err(err) => {
+				eprintln!(
+					"Errored while opening file handle for `{}`: {:#?} {}",
+					target.to_string_lossy(),
+					err.source(),
+					err
+				);
+				process::exit(1);
+			}
+			Ok(file) => file,
+		};
 
-	let target = path::Path::new(filename).with_extension("ts");
-	let file = OpenOptions::new()
-		.write(true)
-		.create_new(true)
-		.open(&target);
-
-	// Handle common error cases gracefully
-	let mut file = match file {
-		Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
-			eprintln!("Refusing to overwrite `{}`", target.to_string_lossy());
-			process::exit(1);
-		}
-		file => file?,
-	};
-
-	file.write_all(code.as_bytes())?;
-	print!("{}", code);
+		file.write_all(code.as_bytes())?;
+	}
 
 	Ok(())
 }
