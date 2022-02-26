@@ -23,6 +23,7 @@ pub fn transform_value(value: &lua_ast::Value) -> Expr {
 			transform_table_constructor(table_constructor)
 		}
 		lua_ast::Value::Number(number) => transform_number(number),
+		// `expr` will also be wrapped in Expression::Parentheses
 		lua_ast::Value::ParenthesesExpression(expr) => transform_expression(expr),
 		lua_ast::Value::String(number) => transform_string(number),
 		lua_ast::Value::Symbol(token)
