@@ -82,24 +82,24 @@ fn process_files() -> i32 {
 
 		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Reading {}", filename));
-		let contents = read_to_string(&filename);
-		let contents = if let Err(err) = contents {
-			exit_code = exitcode::NOINPUT;
-			failure_messages.push(format!("Error while reading `{}`: {:?}", filename, err));
-			continue;
-		} else {
-			contents.unwrap()
+		let contents = match read_to_string(&filename) {
+			Err(err) => {
+				exit_code = exitcode::NOINPUT;
+				failure_messages.push(format!("Error while reading `{}`: {:?}", filename, err));
+				continue;
+			}
+			Ok(contents) => contents,
 		};
 
 		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Parsing {}", filename));
-		let ast = full_moon::parse(&contents);
-		let ast = if let Err(err) = ast {
-			exit_code = exitcode::DATAERR;
-			failure_messages.push(format!("Error while parsing `{}`: {}", filename, err));
-			continue;
-		} else {
-			ast.unwrap()
+		let ast = match full_moon::parse(&contents) {
+			Err(err) => {
+				exit_code = exitcode::DATAERR;
+				failure_messages.push(format!("Error while parsing `{}`: {}", filename, err));
+				continue;
+			}
+			Ok(ast) => ast,
 		};
 
 		#[cfg(feature = "progressbar")]
