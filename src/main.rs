@@ -77,7 +77,7 @@ fn process_files() -> i32 {
 		#[cfg(feature = "progressbar")]
 		{
 			i += 1;
-			pb.set_position(i.try_into().unwrap());
+			pb.set_position(i);
 		}
 
 		#[cfg(feature = "progressbar")]
