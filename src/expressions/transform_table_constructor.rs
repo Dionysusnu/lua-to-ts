@@ -36,6 +36,7 @@ fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Ex
 			lua_ast::FunctionArgs::TableConstructor(table_constructor) => {
 				transform_table_constructor(table_constructor)
 			}
+			lua_ast::FunctionArgs::String(token) => transform_string(token),
 			_ => skip("Unknown function args type", function_args),
 		},
 	)
