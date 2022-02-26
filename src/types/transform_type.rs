@@ -49,7 +49,8 @@ pub fn transform_type(type_info: &lua_ast::types::TypeInfo) -> TsType {
 								argument
 									.name()
 									.map(|name| name.0.token().to_string())
-									.unwrap_or_else(|| String::from("_")),
+									.as_deref()
+									.unwrap_or("_"),
 							),
 						},
 						type_ann: Some(TsTypeAnn {

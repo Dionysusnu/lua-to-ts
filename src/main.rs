@@ -56,7 +56,7 @@ fn process_files() -> i32 {
 	if args.len() < 2 {
 		eprintln!(
 			"Usage: {} <filename>",
-			args.next().unwrap_or_else(|| "lua-to-ts".to_string())
+			args.next().as_deref().unwrap_or("lua-to-ts")
 		);
 		process::exit(exitcode::USAGE);
 	}
