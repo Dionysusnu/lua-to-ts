@@ -242,6 +242,6 @@ pub fn transform_type(type_info: &lua_ast::types::TypeInfo) -> TsType {
 			name: _,
 			ellipse: _,
 		} => skip_type("TS does not allow variadic type arguments", type_info),
-		_ => skip_type("TODO", type_info),
+		_ => skip_type("Unknown TypeInfo kind", type_info),
 	}
 }
