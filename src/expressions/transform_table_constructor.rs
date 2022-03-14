@@ -26,20 +26,9 @@ fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Ex
 		lua_ast::Suffix::Call(lua_ast::Call::AnonymousCall(function_args)) => function_args,
 		_ => unreachable!(),
 	};
-	(
-		Some(()),
-		match function_args {
-			lua_ast::FunctionArgs::Parentheses {
-				arguments,
-				parentheses: _,
-			} => transform_expression(arguments.iter().next().unwrap()),
-			lua_ast::FunctionArgs::TableConstructor(table_constructor) => {
-				transform_table_constructor(table_constructor)
-			}
-			lua_ast::FunctionArgs::String(token) => transform_string(token),
-			_ => skip("Unknown function args type", function_args),
-		},
-	)
+	// unpack only ever has one argument
+	let arg = transform_function_args(function_args).remove(0);
+	(Some(()), *arg.expr)
 }
 
 pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
@@ -47,73 +36,7 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 		.fields()
 		.iter()
 		.all(|field| matches!(field, lua_ast::Field::NoKey(_)));
-	let is_object = args.fields().iter().all(|field| {
-		matches!(field, lua_ast::Field::NameKey { .. })
-			|| matches!(
-				field,
-				lua_ast::Field::ExpressionKey {
-					key: lua_ast::Expression::Value {
-						value,
-						type_assertion: _,
-					},
-					..
-				} if matches!(**value, lua_ast::Value::Number(_))
-			)
-	});
-	if is_object {
-		Expr::Object(ObjectLit {
-			span: Default::default(),
-			props: args
-				.fields()
-				.iter()
-				.map(|field| {
-					PropOrSpread::Prop(boxed(Prop::KeyValue(
-						if let lua_ast::Field::NameKey {
-							key,
-							value,
-							equal: _,
-						} = field
-						{
-							KeyValueProp {
-								key: PropName::Str(make_string(&key.token().to_string())),
-								value: boxed(transform_expression(value)),
-							}
-						} else if let lua_ast::Field::ExpressionKey {
-							key:
-								lua_ast::Expression::Value {
-									value: key,
-									type_assertion: _,
-								},
-							value,
-							equal: _,
-							brackets: _,
-						} = field
-						{
-							let key = if let lua_ast::Value::Number(ref key) = **key {
-								if let tokenizer::TokenType::Number { text } = key.token_type() {
-									text
-								} else {
-									unreachable!("Value::Number only has TokenType::Number")
-								}
-							} else {
-								unreachable!("Checked to be Value::Number earlier")
-							};
-							KeyValueProp {
-								key: PropName::Num(Number::from(
-									// TODO: See if full_moon provides this without manual parsing
-									// BUG: parse will panic on lua syntax like `1_000` or `0b0000`
-									key.to_string().parse::<f64>().unwrap(),
-								)),
-								value: boxed(transform_expression(value)),
-							}
-						} else {
-							unreachable!("Checked to be Field::NameKey earlier")
-						},
-					)))
-				})
-				.collect(),
-		})
-	} else if is_array {
+	if is_array {
 		Expr::Array(ArrayLit {
 			span: Default::default(),
 			elems: args
@@ -121,20 +44,54 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 				.iter()
 				.map(|field| {
 					if let lua_ast::Field::NoKey(original_expression) = field {
+						// Detect usage of `unpack` in table constructor
+						// This needs to convert to the `...` spread operator in TS
 						let (spread, expression) = get_unpack_data(original_expression);
 						Some(ExprOrSpread {
-							// Detect usage of `unpack` in table constructor
-							// This needs to convert to the `...` spread operator in TS
 							spread: spread.map(|()| Default::default()),
 							expr: boxed(expression),
 						})
 					} else {
-						unreachable!("Checked to be all NoKey variant earlier")
+						unreachable!()
 					}
 				})
 				.collect(),
 		})
 	} else {
-		skip("Mixed tables do not exist in TS", args)
+		Expr::Object(ObjectLit {
+			span: Default::default(),
+			props: args
+				.fields()
+				.iter()
+				.map(|field| {
+					PropOrSpread::Prop(boxed(Prop::KeyValue(match field {
+						lua_ast::Field::NameKey {
+							key,
+							value,
+							equal: _,
+						} => KeyValueProp {
+							// Not PropName::Ident because Luau has different ident validity rules
+							key: PropName::Str(make_string(&key.token().to_string())),
+							value: boxed(transform_expression(value)),
+						},
+						lua_ast::Field::ExpressionKey {
+							key,
+							value,
+							equal: _,
+							brackets: _,
+						} => KeyValueProp {
+							key: PropName::Computed(ComputedPropName {
+								span: Default::default(),
+								expr: boxed(transform_expression(key)),
+							}),
+							value: boxed(transform_expression(value)),
+						},
+						_ => {
+							unreachable!()
+						}
+					})))
+				})
+				.collect(),
+		})
 	}
 }
