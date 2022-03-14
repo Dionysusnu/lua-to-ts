@@ -15,9 +15,9 @@ full_moon = {version = "0.15.0", features = ["roblox"]}
 indicatif = {version = "0.16.2", optional = true}
 lazy_static = "1.4.0"
 swc_atoms = "0.2.9"
-swc_common = "0.17.9"
-swc_ecma_ast = "0.68.3"
-swc_ecma_codegen = "0.93.3"
+swc_common = "0.17.17"
+swc_ecma_ast = "0.70.0"
+swc_ecma_codegen = "0.96.0"
 
 [profile.dev.package.full_moon]
 # Fixes stack overflow from non-optimised recursion while parsing
