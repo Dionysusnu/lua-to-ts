@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
 pub fn transform_unary_expression(op: &lua_ast::UnOp, expression: &lua_ast::Expression) -> Expr {
-	if matches!(op, lua_ast::UnOp::Hash(_)) {
-		Expr::Call(CallExpr {
+	match op {
+		lua_ast::UnOp::Hash(_) => Expr::Call(CallExpr {
 			span: Default::default(),
 			args: vec![],
 			type_args: None,
@@ -15,20 +15,17 @@ pub fn transform_unary_expression(op: &lua_ast::UnOp, expression: &lua_ast::Expr
 					optional: false,
 				}),
 			}))),
-		})
-	} else {
-		match op {
-			lua_ast::UnOp::Not(_) => Expr::Unary(UnaryExpr {
-				span: Default::default(),
-				op: UnaryOp::Bang,
-				arg: boxed(transform_expression(expression)),
-			}),
-			lua_ast::UnOp::Minus(_) => Expr::Unary(UnaryExpr {
-				span: Default::default(),
-				op: UnaryOp::Minus,
-				arg: boxed(transform_expression(expression)),
-			}),
-			_ => skip("Unknown unary operator", op),
-		}
+		}),
+		lua_ast::UnOp::Minus(_) => Expr::Unary(UnaryExpr {
+			span: Default::default(),
+			op: UnaryOp::Minus,
+			arg: boxed(parens(transform_expression(expression))),
+		}),
+		lua_ast::UnOp::Not(_) => Expr::Unary(UnaryExpr {
+			span: Default::default(),
+			op: UnaryOp::Bang,
+			arg: boxed(parens(transform_expression(expression))),
+		}),
+		_ => skip("Unknown unary operator", op),
 	}
 }

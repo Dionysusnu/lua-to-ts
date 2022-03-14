@@ -13,6 +13,13 @@ pub fn make_string(content: &str) -> Str {
 	}
 }
 
+pub fn parens(expr: Expr) -> Expr {
+	Expr::Paren(ParenExpr {
+		span: Default::default(),
+		expr: boxed(expr),
+	})
+}
+
 fn get_fail_string(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Str {
 	#[cfg(debug)]
 	eprintln!("{}: {:#?}", reason, node);

@@ -25,7 +25,7 @@ pub fn transform_binary_expression(
 			lua_ast::BinOp::TwoEqual(_) => BinaryOp::EqEqEq,
 			_ => return skip("Unknown binary operator", op),
 		},
-		left: boxed(transform_expression(lhs)),
-		right: boxed(transform_expression(rhs)),
+		left: boxed(parens(transform_expression(lhs))),
+		right: boxed(parens(transform_expression(rhs))),
 	})
 }
