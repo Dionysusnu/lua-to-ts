@@ -24,10 +24,18 @@ pub fn transform_assignment(assignment: &lua_ast::Assignment) -> Stmt {
 				},
 				right: {
 					if expressions.len() != 1 {
-						boxed(skip(
-							"multiple expressions in assignment not supported",
-							assignment,
-						))
+						boxed(Expr::Array(ArrayLit {
+							span: Default::default(),
+							elems: expressions
+								.iter()
+								.map(|exp| {
+									Some(ExprOrSpread {
+										spread: None,
+										expr: boxed(transform_expression(exp)),
+									})
+								})
+								.collect(),
+						}))
 					} else {
 						boxed(transform_expression(expressions.iter().next().unwrap()))
 					}
