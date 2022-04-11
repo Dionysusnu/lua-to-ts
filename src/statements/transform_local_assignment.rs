@@ -48,10 +48,18 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 					},
 					init: {
 						if expressions.len() != 1 {
-							Some(boxed(skip(
-								"multiple expressions in variable assignment not supported",
-								local_assignment,
-							)))
+							Some(boxed(Expr::Array(ArrayLit {
+								span: Default::default(),
+								elems: expressions
+									.iter()
+									.map(|exp| {
+										Some(ExprOrSpread {
+											spread: None,
+											expr: boxed(transform_expression(exp)),
+										})
+									})
+									.collect(),
+							})))
 						} else {
 							expressions
 								.iter()
