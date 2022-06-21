@@ -30,7 +30,8 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build --locked
+          command: build
+          args: --locked
 
   test:
     needs: build
