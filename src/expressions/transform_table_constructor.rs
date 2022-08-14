@@ -86,9 +86,26 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 							}),
 							value: boxed(transform_expression(value)),
 						},
-						_ => {
-							unreachable!()
-						}
+						lua_ast::Field::NoKey(value) => KeyValueProp {
+							key: PropName::Num(Number::from(
+								args.fields()
+									.iter()
+									.filter(|f| matches!(f, lua_ast::Field::NoKey(_)))
+									.position(|f| f == field)
+									// unwrap: field will always be NoKey and thus found in iterator
+									// +1: Luau tables start indexing at 1
+									.unwrap() + 1,
+							)),
+							value: boxed(transform_expression(value)),
+						},
+						_ => KeyValueProp {
+							key: PropName::Ident(Ident {
+								optional: false,
+								span: Default::default(),
+								sym: JsWord::from("UnknownTableField"),
+							}),
+							value: boxed(skip("Unknown Field kind", field)),
+						},
 					})))
 				})
 				.collect(),
