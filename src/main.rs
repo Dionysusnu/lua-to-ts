@@ -30,8 +30,6 @@ lazy_static! {
 		.template(
 			"{spinner:.cyan} [{elapsed:.dim}] {msg}... [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})\n{prefix}",
 		)
-		// For more spinners check out the cli-spinners project:
-		// https://github.com/sindresorhus/cli-spinners/blob/master/spinners.json
 		.tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"])
 		.progress_chars("=>-");
 
@@ -63,11 +61,11 @@ fn process_files(args: Cli) -> i32 {
 	let mut exit_code = exitcode::OK;
 
 	#[cfg(feature = "progressbar")]
-	{
-		let pb = ProgressBar::new(args.files.len().try_into().unwrap());
-		pb.set_style(PROGRESS_BAR_STYLE.clone());
-		let mut i = 0;
-	}
+	let pb = ProgressBar::new(args.files.len().try_into().unwrap());
+	#[cfg(feature = "progressbar")]
+	pb.set_style(PROGRESS_BAR_STYLE.clone());
+	#[cfg(feature = "progressbar")]
+	let mut i = 0;
 
 	for filename in args.files {
 		#[cfg(feature = "progressbar")]
@@ -173,7 +171,7 @@ fn process_files(args: Cli) -> i32 {
 	#[cfg(feature = "progressbar")]
 	{
 		pb.set_style(SPINNER_STYLE_FINISHED.clone());
-		pb.finish_with_message("Processing");
+		pb.finish_with_message("Processed files");
 	}
 
 	if !failure_messages.is_empty() {
