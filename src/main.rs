@@ -16,7 +16,6 @@ use lazy_static::lazy_static;
 use std::convert::TryInto;
 
 use std::{
-	env,
 	fs::{read_to_string, OpenOptions},
 	io::{self, Write},
 	path, process,
