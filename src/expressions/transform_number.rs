@@ -11,13 +11,13 @@ pub fn transform_number(token: &tokenizer::TokenReference) -> Expr {
 	let number = match text.as_str().parse::<f64>() {
 		Ok(num) => num,
 		// Try parsing as Hex (0x)
-		Err(_) => match i32::from_str_radix(&text[2..], 16) {
-			Ok(num) => num.into(),
+		Err(_) => match u64::from_str_radix(&text[2..], 16) {
+			Ok(num) => num as f64,
 			// Try parsing as binary (0b)
-			Err(_) => match i32::from_str_radix(&text.as_str()[2..], 2) {
-				Ok(num) => num.into(),
+			Err(_) => match u64::from_str_radix(&text.as_str()[2..], 2) {
+				Ok(num) => num as f64,
 				// Will have been full_moon tokenizer error
-				Err(_) => unreachable!(),
+				Err(_) => return skip("Invalid number literal", token),
 			},
 		},
 	};
