@@ -141,7 +141,7 @@ fn process_files(args: Cli) -> i32 {
 			Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
 				exit_code = exitcode::CANTCREAT;
 				failure_messages.push(format!(
-					"Refusing to overwrite `{}`",
+					"Refused to overwrite `{}`",
 					target.to_string_lossy()
 				));
 				continue;
