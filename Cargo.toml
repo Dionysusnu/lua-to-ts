@@ -9,10 +9,11 @@ version = "0.1.0"
 progressbar = ["console", "indicatif"]
 
 [dependencies]
-console = {version = "0.15.0", optional = true}
+clap = { version = "3.2.17", features = ["derive"] }
+console = { version = "0.15.0", optional = true }
 exitcode = "1.1.2"
-full_moon = {version = "0.15.0", features = ["roblox"]}
-indicatif = {version = "0.16.2", optional = true}
+full_moon = { version = "0.15.0", features = ["roblox"] }
+indicatif = { version = "0.16.2", optional = true }
 lazy_static = "1.4.0"
 swc_atoms = "0.2.9"
 swc_common = "0.17.17"

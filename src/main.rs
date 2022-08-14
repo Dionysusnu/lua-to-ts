@@ -50,30 +50,26 @@ lazy_static! {
 		.template(format!("{} {{msg:.dim}}", style("❌").red()).as_str());
 }
 
-fn process_files() -> i32 {
-	let mut args = env::args();
+use clap::Parser;
 
-	if args.len() < 2 {
-		eprintln!(
-			"Usage: {} <filename>",
-			args.next().as_deref().unwrap_or("lua-to-ts")
-		);
-		process::exit(exitcode::USAGE);
-	}
+#[derive(Parser)]
+struct Cli {
+	#[clap(required = true)]
+	files: Vec<String>,
+}
 
-	// ignore filename of lua-to-ts itself
-	args.next();
-
+fn process_files(args: Cli) -> i32 {
 	let mut failure_messages = vec![];
 	let mut exit_code = exitcode::OK;
 
 	#[cfg(feature = "progressbar")]
 	{
-		let pb = ProgressBar::new(args.len().try_into().unwrap());
+		let pb = ProgressBar::new(args.files.len().try_into().unwrap());
 		pb.set_style(PROGRESS_BAR_STYLE.clone());
 		let mut i = 0;
 	}
-	for filename in args {
+
+	for filename in args.files {
 		#[cfg(feature = "progressbar")]
 		{
 			i += 1;
@@ -188,5 +184,5 @@ fn process_files() -> i32 {
 }
 
 fn main() {
-	process::exit(process_files());
+	process::exit(process_files(Cli::parse()));
 }
