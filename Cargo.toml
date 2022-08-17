@@ -14,7 +14,12 @@ console = { version = "0.15.0", optional = true }
 exitcode = "1.1.2"
 full_moon = { version = "0.15.0", features = ["roblox"] }
 indicatif = { version = "0.16.2", optional = true }
+itertools = "0.10.3"
 lazy_static = "1.4.0"
+rbx_binary = "0.6.6"
+rbx_dom_weak = "2.4.0"
+rbx_types = "1.4.2"
+rbx_xml = "0.12.4"
 swc_atoms = "0.2.9"
 swc_common = "0.17.17"
 swc_ecma_ast = "0.70.0"

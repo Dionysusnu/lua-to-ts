@@ -13,6 +13,14 @@ pub fn make_string(content: &str) -> Str {
 	}
 }
 
+pub fn ident(name: String) -> Ident {
+	Ident {
+		span: Default::default(),
+		optional: false,
+		sym: JsWord::from(name),
+	}
+}
+
 pub fn parens(expr: Expr) -> Expr {
 	Expr::Paren(ParenExpr {
 		span: Default::default(),
