@@ -140,7 +140,7 @@ fn process_files(args: Cli) -> i32 {
 			Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
 				exit_code = exitcode::CANTCREAT;
 				failure_messages.push(format!(
-					"Refused to overwrite `{}`",
+					"Refusing to overwrite `{}`",
 					target.to_string_lossy()
 				));
 				continue;
@@ -148,7 +148,7 @@ fn process_files(args: Cli) -> i32 {
 			Err(err) => {
 				exit_code = exitcode::CANTCREAT;
 				failure_messages.push(format!(
-					"Errored while opening file handle for `{}`: {:?}",
+					"Error while opening file handle for `{}`: {:?}",
 					target.to_string_lossy(),
 					err
 				));
@@ -160,7 +160,7 @@ fn process_files(args: Cli) -> i32 {
 		if let Err(err) = file.write_all(code.as_bytes()) {
 			exit_code = exitcode::IOERR;
 			failure_messages.push(format!(
-				"Errored while writing `{}`: {:?}",
+				"Error while writing `{}`: {:?}",
 				target.to_string_lossy(),
 				err
 			));
