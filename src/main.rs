@@ -3,6 +3,9 @@ mod statements;
 mod types;
 mod util;
 
+mod roblox;
+use roblox::transform_dom;
+
 mod prelude;
 use crate::prelude::*;
 
@@ -16,9 +19,10 @@ use lazy_static::lazy_static;
 use std::convert::TryInto;
 
 use std::{
-	fs::{read_to_string, OpenOptions},
-	io::{self, Write},
-	path, process,
+	fs::{read_to_string, File, OpenOptions},
+	io::{BufReader, Write},
+	path::Path,
+	process,
 };
 use swc_common::{sync::Lrc, SourceMap};
 use swc_ecma_codegen::{text_writer::JsWriter, Emitter};
@@ -57,6 +61,52 @@ struct Cli {
 	overwrite: bool,
 }
 
+#[allow(clippy::large_enum_variant)]
+enum TransformFile {
+	Lua(lua_ast::Ast),
+	Model(rbx_dom_weak::WeakDom),
+}
+
+impl TransformFile {
+	fn from(filename: &str) -> Result<TransformFile, String> {
+		match Path::new(filename)
+			.extension()
+			.and_then(std::ffi::OsStr::to_str)
+		{
+			Some("lua" | "luau") => match full_moon::parse(
+				&read_to_string(filename)
+					.map_err(|err| format!("Error while opening `{}`: {}", filename, err))?,
+			) {
+				Err(err) => Err(format!("Error while parsing `{}`: {}", filename, err))?,
+				Ok(ast) => Ok(TransformFile::Lua(ast)),
+			},
+			Some("rbxm") => match rbx_binary::from_reader(BufReader::new(
+				File::open(filename)
+					.map_err(|err| format!("Error while opening `{}`: {}", filename, err))?,
+			)) {
+				Err(err) => Err(format!("Error while parsing `{}`: {}", filename, err))?,
+				Ok(ast) => Ok(TransformFile::Model(ast)),
+			},
+			Some("rbxmx") => {
+				match rbx_xml::from_reader_default(BufReader::new(
+					File::open(filename)
+						.map_err(|err| format!("Error while opening `{}`: {}", filename, err))?,
+				)) {
+					Err(err) => Err(format!("Error while parsing `{}`: {}", filename, err))?,
+					Ok(ast) => Ok(TransformFile::Model(ast)),
+				}
+			}
+			_ => Err(format!("Could not detect file kind of `{}`", filename)),
+		}
+	}
+	fn transform(self) -> Vec<ModuleItem> {
+		match self {
+			TransformFile::Lua(ast) => transform_module_block(ast.nodes()),
+			TransformFile::Model(dom) => transform_dom(dom),
+		}
+	}
+}
+
 fn process_files(args: Cli) -> i32 {
 	let mut failure_messages = vec![];
 	let mut exit_code = exitcode::OK;
@@ -76,22 +126,11 @@ fn process_files(args: Cli) -> i32 {
 		}
 
 		#[cfg(feature = "progressbar")]
-		pb.set_message(format!("Reading {}", filename));
-		let contents = match read_to_string(&filename) {
-			Err(err) => {
-				exit_code = exitcode::NOINPUT;
-				failure_messages.push(format!("Error while reading `{}`: {:?}", filename, err));
-				continue;
-			}
-			Ok(contents) => contents,
-		};
-
-		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Parsing {}", filename));
-		let ast = match full_moon::parse(&contents) {
+		let ast = match TransformFile::from(&filename) {
 			Err(err) => {
 				exit_code = exitcode::DATAERR;
-				failure_messages.push(format!("Error while parsing `{}`: {}", filename, err));
+				failure_messages.push(err);
 				continue;
 			}
 			Ok(ast) => ast,
@@ -99,7 +138,7 @@ fn process_files(args: Cli) -> i32 {
 
 		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Transforming {}", filename));
-		let body = transform_module_block(ast.nodes());
+		let body = ast.transform();
 
 		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Emitting {}", filename));
@@ -131,7 +170,7 @@ fn process_files(args: Cli) -> i32 {
 
 		#[cfg(feature = "progressbar")]
 		pb.set_message(format!("Writing {}", filename));
-		let target = path::Path::new(&filename).with_extension("ts");
+		let target = Path::new(&filename).with_extension("ts");
 		let file = OpenOptions::new()
 			.write(true)
 			.truncate(true)
@@ -140,7 +179,7 @@ fn process_files(args: Cli) -> i32 {
 
 		// Handle common error cases gracefully
 		let mut file = match file {
-			Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
+			Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
 				exit_code = exitcode::CANTCREAT;
 				failure_messages.push(format!(
 					"Refusing to overwrite `{}`",
