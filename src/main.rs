@@ -53,6 +53,8 @@ use clap::Parser;
 struct Cli {
 	#[clap(required = true)]
 	files: Vec<String>,
+	#[clap(long)]
+	overwrite: bool,
 }
 
 fn process_files(args: Cli) -> i32 {
@@ -132,7 +134,8 @@ fn process_files(args: Cli) -> i32 {
 		let target = path::Path::new(&filename).with_extension("ts");
 		let file = OpenOptions::new()
 			.write(true)
-			.create_new(true)
+			.truncate(true)
+			.create_new(!args.overwrite)
 			.open(&target);
 
 		// Handle common error cases gracefully
