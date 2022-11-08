@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 // Taken and adapted from StyLua under the MPL-2.0 license
 // https://github.com/JohnnyMorganz/StyLua/blob/7efc7cbd91a4b8235ea4e8c6b07b7028fc1534b7/src/verify_ast.rs#L129-L147
-pub fn transform_number(token: &tokenizer::TokenReference) -> Expr {
+pub fn transform_number(token: &tokenizer::TokenReference) -> Box<Expr> {
 	let text = match token.token_type() {
 		tokenizer::TokenType::Number { text } => text,
 		_ => return skip("transform_number token was not TokenType::Number", token),
@@ -21,8 +21,9 @@ pub fn transform_number(token: &tokenizer::TokenReference) -> Expr {
 			},
 		},
 	};
-	Expr::Lit(Lit::Num(Number {
+	boxed(Expr::Lit(Lit::Num(Number {
 		span: Default::default(),
 		value: number,
-	}))
+		raw: None,
+	})))
 }

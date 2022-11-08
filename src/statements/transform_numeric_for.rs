@@ -44,13 +44,13 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 	};
 	Stmt::For(ForStmt {
 		span: Default::default(),
-		init: Some(VarDeclOrExpr::VarDecl(VarDecl {
+		init: Some(VarDeclOrExpr::VarDecl(boxed(VarDecl {
 			span: Default::default(),
 			kind: VarDeclKind::Let,
 			declare: false,
 			decls: vec![VarDeclarator {
 				span: Default::default(),
-				init: Some(boxed(transform_expression(numeric_for.start()))),
+				init: Some(transform_expression(numeric_for.start())),
 				definite: false,
 				name: Pat::Ident(BindingIdent {
 					type_ann: numeric_for.type_specifier().map(transform_type_specifier),
@@ -61,7 +61,7 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 					},
 				}),
 			}],
-		})),
+		}))),
 		test: Some(boxed(Expr::Bin(BinExpr {
 			span: Default::default(),
 			left: boxed(Expr::Ident(Ident {
@@ -70,7 +70,7 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 				sym: JsWord::from(numeric_for.index_variable().token().to_string()),
 			})),
 			op: op.unwrap(),
-			right: boxed(transform_expression(numeric_for.end())),
+			right: transform_expression(numeric_for.end()),
 		}))),
 		update: Some(boxed(Expr::Assign(AssignExpr {
 			span: Default::default(),
@@ -80,17 +80,16 @@ pub fn transform_numeric_for(numeric_for: &lua_ast::NumericFor) -> Stmt {
 				sym: JsWord::from(numeric_for.index_variable().token().to_string()),
 			}))),
 			op: AssignOp::AddAssign,
-			right: boxed(
-				numeric_for
-					.step()
-					.map(transform_expression)
-					.unwrap_or_else(|| {
-						Expr::Lit(Lit::Num(Number {
-							span: Default::default(),
-							value: 1.0,
-						}))
-					}),
-			),
+			right: numeric_for
+				.step()
+				.map(transform_expression)
+				.unwrap_or_else(|| {
+					boxed(Expr::Lit(Lit::Num(Number {
+						span: Default::default(),
+						value: 1.0,
+						raw: None,
+					})))
+				}),
 		}))),
 		body: boxed(transform_block(numeric_for.block())),
 	})

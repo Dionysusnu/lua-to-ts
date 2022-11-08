@@ -8,7 +8,7 @@ pub fn transform_local_function(declaration: &lua_ast::LocalFunction) -> Stmt {
 			sym: JsWord::from(declaration.name().token().to_string()),
 			optional: false,
 		},
-		function: Function {
+		function: boxed(Function {
 			span: Default::default(),
 			is_async: false,
 			is_generator: false,
@@ -30,6 +30,6 @@ pub fn transform_local_function(declaration: &lua_ast::LocalFunction) -> Stmt {
 				span: Default::default(),
 				stmts: transform_block_statements(declaration.body().block()),
 			}),
-		},
+		}),
 	}))
 }

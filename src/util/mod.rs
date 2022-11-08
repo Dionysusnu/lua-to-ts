@@ -7,9 +7,8 @@ pub fn boxed<T>(arg: T) -> Box<T> {
 pub fn make_string(content: &str) -> Str {
 	Str {
 		span: Default::default(),
-		has_escape: false,
-		kind: StrKind::Synthesized,
 		value: JsWord::from(content),
+		raw: None,
 	}
 }
 
@@ -21,11 +20,11 @@ pub fn ident(name: String) -> Ident {
 	}
 }
 
-pub fn parens(expr: Expr) -> Expr {
-	Expr::Paren(ParenExpr {
+pub fn parens(expr: Box<Expr>) -> Box<Expr> {
+	boxed(Expr::Paren(ParenExpr {
 		span: Default::default(),
-		expr: boxed(expr),
-	})
+		expr,
+	}))
 }
 
 fn get_fail_string(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Str {
@@ -38,8 +37,8 @@ fn get_fail_string(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToS
 	))
 }
 
-pub fn skip(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Expr {
-	Expr::Call(CallExpr {
+pub fn skip(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Box<Expr> {
+	boxed(Expr::Call(CallExpr {
 		span: Default::default(),
 		type_args: Default::default(),
 		args: vec![ExprOrSpread {
@@ -51,21 +50,24 @@ pub fn skip(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString))
 			sym: JsWord::from("error"),
 			optional: false,
 		}))),
-	})
+	}))
 }
 
 pub fn skip_stmt(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> Stmt {
 	Stmt::Expr(ExprStmt {
 		span: Default::default(),
-		expr: boxed(skip(reason, node)),
+		expr: skip(reason, node),
 	})
 }
 
-pub fn skip_type(reason: &str, node: &(impl node::Node + std::fmt::Debug + ToString)) -> TsType {
-	TsType::TsLitType(TsLitType {
+pub fn skip_type(
+	reason: &str,
+	node: &(impl node::Node + std::fmt::Debug + ToString),
+) -> Box<TsType> {
+	boxed(TsType::TsLitType(TsLitType {
 		span: Default::default(),
 		lit: TsLit::Str(get_fail_string(reason, node)),
-	})
+	}))
 }
 
 pub const REST_ARGS_NAME: &str = "_args";

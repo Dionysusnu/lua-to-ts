@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -> Stmt {
-	Stmt::Decl(Decl::Var(VarDecl {
+	Stmt::Decl(Decl::Var(boxed(VarDecl {
 		span: Default::default(),
 		declare: false,
 		kind: VarDeclKind::Let,
@@ -55,16 +55,13 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 									.map(|exp| {
 										Some(ExprOrSpread {
 											spread: None,
-											expr: boxed(transform_expression(exp)),
+											expr: transform_expression(exp),
 										})
 									})
 									.collect(),
 							})))
 						} else {
-							expressions
-								.iter()
-								.next()
-								.map(|e| boxed(transform_expression(e)))
+							expressions.iter().next().map(transform_expression)
 						}
 					},
 				}]
@@ -90,5 +87,5 @@ pub fn transform_local_assignment(local_assignment: &lua_ast::LocalAssignment) -
 					.collect()
 			}
 		},
-	}))
+	})))
 }

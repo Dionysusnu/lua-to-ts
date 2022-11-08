@@ -2,8 +2,8 @@ use crate::prelude::*;
 
 pub fn transform_table_type(
 	fields: &lua_ast::punctuated::Punctuated<lua_ast::types::TypeField>,
-) -> TsType {
-	TsType::TsTypeLit(TsTypeLit {
+) -> Box<TsType> {
+	boxed(TsType::TsTypeLit(TsTypeLit {
 		span: Default::default(),
 		members: fields
 			.iter()
@@ -24,10 +24,7 @@ pub fn transform_table_type(
 						),
 						init: None,
 						params: vec![],
-						type_ann: Some(TsTypeAnn {
-							span: Default::default(),
-							type_ann: boxed(transform_type(field.value())),
-						}),
+						type_ann: Some(transform_type_info(field.value())),
 						type_params: None,
 					})
 				}
@@ -42,19 +39,13 @@ pub fn transform_table_type(
 								optional: false,
 								sym: JsWord::from("_"),
 							},
-							type_ann: Some(TsTypeAnn {
-								span: Default::default(),
-								type_ann: boxed(transform_type(inner)),
-							}),
+							type_ann: Some(transform_type_info(inner)),
 						})],
-						type_ann: Some(TsTypeAnn {
-							span: Default::default(),
-							type_ann: boxed(transform_type(field.value())),
-						}),
+						type_ann: Some(transform_type_info(field.value())),
 					})
 				}
 				_ => unimplemented!("Unknown TypeFieldKey kind"),
 			})
 			.collect(),
-	})
+	}))
 }

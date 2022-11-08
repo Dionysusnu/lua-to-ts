@@ -35,9 +35,7 @@ pub fn transform_module_block(block: &lua_ast::Block) -> Vec<ModuleItem> {
 		out.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
 			ExportDefaultExpr {
 				span: Default::default(),
-				expr: boxed(transform_expression(
-					return_statement.returns().iter().next().unwrap(),
-				)),
+				expr: transform_expression(return_statement.returns().iter().next().unwrap()),
 			},
 		)));
 	};

@@ -26,7 +26,7 @@ fn transform_instance(dom: &WeakDom, instance: &Instance) -> TsTypeElement {
 		computed: false,
 		optional: false,
 		type_params: None,
-		type_ann: Some(TsTypeAnn {
+		type_ann: Some(boxed(TsTypeAnn {
 			span: Default::default(),
 			type_ann: boxed({
 				let class_type = TsType::TsTypeRef(TsTypeRef {
@@ -52,7 +52,7 @@ fn transform_instance(dom: &WeakDom, instance: &Instance) -> TsTypeElement {
 					class_type
 				}
 			}),
-		}),
+		})),
 		init: None,
 		params: vec![],
 	})
@@ -63,7 +63,7 @@ pub fn transform_dom(dom: WeakDom) -> Vec<ModuleItem> {
 		.map(|instance| {
 			ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl {
 				span: Default::default(),
-				decl: Decl::TsInterface(TsInterfaceDecl {
+				decl: Decl::TsInterface(boxed(TsInterfaceDecl {
 					span: Default::default(),
 					id: Ident {
 						span: Default::default(),
@@ -81,7 +81,7 @@ pub fn transform_dom(dom: WeakDom) -> Vec<ModuleItem> {
 						span: Default::default(),
 						body: transform_children(&dom, instance.children()),
 					},
-				}),
+				})),
 			}))
 		})
 		.collect()

@@ -6,7 +6,7 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 		lua_ast::Stmt::Do(do_stmt) => transform_block(do_stmt.block()),
 		lua_ast::Stmt::FunctionCall(function_call) => Stmt::Expr(ExprStmt {
 			span: Default::default(),
-			expr: boxed(transform_function_call(function_call)),
+			expr: transform_function_call(function_call),
 		}),
 		lua_ast::Stmt::FunctionDeclaration(declaration) => {
 			transform_function_declaration(declaration)
@@ -24,12 +24,12 @@ pub fn transform_statement(stmt: &lua_ast::Stmt) -> Stmt {
 			test: boxed(Expr::Unary(UnaryExpr {
 				span: Default::default(),
 				op: UnaryOp::Bang,
-				arg: boxed(transform_expression(repeat.until())),
+				arg: transform_expression(repeat.until()),
 			})),
 		}),
 		lua_ast::Stmt::While(while_stmt) => Stmt::While(WhileStmt {
 			span: Default::default(),
-			test: boxed(transform_expression(while_stmt.condition())),
+			test: transform_expression(while_stmt.condition()),
 			body: boxed(transform_block(while_stmt.block())),
 		}),
 		lua_ast::Stmt::CompoundAssignment(compound_assignment) => {

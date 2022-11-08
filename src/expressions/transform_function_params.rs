@@ -1,13 +1,13 @@
 use crate::prelude::*;
 
 fn skip_double_rest(param: &lua_ast::Parameter) -> Pat {
-	Pat::Expr(boxed(skip(
+	Pat::Expr(skip(
 		&format!(
 			"Double use of `{}` or ... in function parameters",
 			REST_ARGS_NAME
 		),
 		param,
-	)))
+	))
 }
 
 pub fn transform_function_params<'a>(
@@ -46,14 +46,16 @@ pub fn transform_function_params<'a>(
 					Pat::Rest(RestPat {
 						span: Default::default(),
 						dot3_token: Default::default(),
-						type_ann: type_specifier.map(|t| TsTypeAnn {
-							span: Default::default(),
-							// Lua rest param is the individual type
-							// TS requires array of individual type
-							type_ann: boxed(TsType::TsArrayType(TsArrayType {
+						type_ann: type_specifier.map(|t| {
+							boxed(TsTypeAnn {
 								span: Default::default(),
-								elem_type: boxed(transform_type(t.type_info())),
-							})),
+								// Luau rest param is the individual type
+								// TS requires array of individual type
+								type_ann: boxed(TsType::TsArrayType(TsArrayType {
+									span: Default::default(),
+									elem_type: transform_type(t.type_info()),
+								})),
+							})
 						}),
 						arg: boxed(Pat::Ident(BindingIdent {
 							// type_ann already done above
@@ -66,7 +68,7 @@ pub fn transform_function_params<'a>(
 						})),
 					})
 				}
-				_ => Pat::Expr(boxed(skip("Unknown parameter type", param))),
+				_ => Pat::Expr(skip("Unknown parameter type", param)),
 			}
 		})
 		.collect()

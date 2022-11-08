@@ -3,14 +3,14 @@ use crate::prelude::*;
 pub fn transform_prefix_suffixes<'a>(
 	prefix: &lua_ast::Prefix,
 	suffixes: impl Iterator<Item = &'a lua_ast::Suffix>,
-) -> Expr {
+) -> Box<Expr> {
 	suffixes.fold(
 		match prefix {
-			lua_ast::Prefix::Name(token) => Expr::Ident(Ident {
+			lua_ast::Prefix::Name(token) => boxed(Expr::Ident(Ident {
 				optional: false,
 				span: Default::default(),
 				sym: JsWord::from(token.token().to_string()),
-			}),
+			})),
 			lua_ast::Prefix::Expression(expr) => transform_expression(expr),
 			_ => skip("Unknown prefix variant", prefix),
 		},

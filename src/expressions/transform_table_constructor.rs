@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Expr) {
+fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Box<Expr>) {
 	let default = || (None, transform_expression(original_expression));
 	let value = match original_expression {
 		lua_ast::Expression::Value {
@@ -28,15 +28,15 @@ fn get_unpack_data(original_expression: &lua_ast::Expression) -> (Option<()>, Ex
 	};
 	// unpack only ever has one argument
 	let arg = transform_function_args(function_args).remove(0);
-	(Some(()), *arg.expr)
+	(Some(()), arg.expr)
 }
 
-pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
+pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Box<Expr> {
 	let is_array = args
 		.fields()
 		.iter()
 		.all(|field| matches!(field, lua_ast::Field::NoKey(_)));
-	if is_array {
+	boxed(if is_array {
 		Expr::Array(ArrayLit {
 			span: Default::default(),
 			elems: args
@@ -46,10 +46,10 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 					if let lua_ast::Field::NoKey(original_expression) = field {
 						// Detect usage of `unpack` in table constructor
 						// This needs to convert to the `...` spread operator in TS
-						let (spread, expression) = get_unpack_data(original_expression);
+						let (spread, expr) = get_unpack_data(original_expression);
 						Some(ExprOrSpread {
 							spread: spread.map(|()| Default::default()),
-							expr: boxed(expression),
+							expr,
 						})
 					} else {
 						unreachable!()
@@ -72,7 +72,7 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 						} => KeyValueProp {
 							// Not PropName::Ident because Luau has different ident validity rules
 							key: PropName::Str(make_string(&key.token().to_string())),
-							value: boxed(transform_expression(value)),
+							value: transform_expression(value),
 						},
 						lua_ast::Field::ExpressionKey {
 							key,
@@ -82,9 +82,9 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 						} => KeyValueProp {
 							key: PropName::Computed(ComputedPropName {
 								span: Default::default(),
-								expr: boxed(transform_expression(key)),
+								expr: transform_expression(key),
 							}),
-							value: boxed(transform_expression(value)),
+							value: transform_expression(value),
 						},
 						lua_ast::Field::NoKey(value) => KeyValueProp {
 							key: PropName::Num(Number::from(
@@ -96,7 +96,7 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 									// +1: Luau tables start indexing at 1
 									.unwrap() + 1,
 							)),
-							value: boxed(transform_expression(value)),
+							value: transform_expression(value),
 						},
 						_ => KeyValueProp {
 							key: PropName::Ident(Ident {
@@ -104,11 +104,11 @@ pub fn transform_table_constructor(args: &lua_ast::TableConstructor) -> Expr {
 								span: Default::default(),
 								sym: JsWord::from("UnknownTableField"),
 							}),
-							value: boxed(skip("Unknown Field kind", field)),
+							value: skip("Unknown Field kind", field),
 						},
 					})))
 				})
 				.collect(),
 		})
-	}
+	})
 }

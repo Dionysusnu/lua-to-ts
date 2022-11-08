@@ -21,8 +21,8 @@ pub fn transform_compound_assignment(assignment: &lua_ast::types::CompoundAssign
 						)
 					}
 				},
-				left: PatOrExpr::Expr(boxed(transform_var(assignment.lhs()))),
-				right: boxed(transform_expression(assignment.rhs())),
+				left: PatOrExpr::Expr(transform_var(assignment.lhs())),
+				right: transform_expression(assignment.rhs()),
 			}
 		})),
 	})

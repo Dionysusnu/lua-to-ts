@@ -4,8 +4,8 @@ pub fn transform_binary_expression(
 	op: &lua_ast::BinOp,
 	lhs: &lua_ast::Expression,
 	rhs: &lua_ast::Expression,
-) -> Expr {
-	Expr::Bin(BinExpr {
+) -> Box<Expr> {
+	boxed(Expr::Bin(BinExpr {
 		span: Default::default(),
 		op: match op {
 			lua_ast::BinOp::And(_) => BinaryOp::LogicalAnd,
@@ -25,7 +25,7 @@ pub fn transform_binary_expression(
 			lua_ast::BinOp::TwoEqual(_) => BinaryOp::EqEqEq,
 			_ => return skip("Unknown binary operator", op),
 		},
-		left: boxed(parens(transform_expression(lhs))),
-		right: boxed(parens(transform_expression(rhs))),
-	})
+		left: parens(transform_expression(lhs)),
+		right: parens(transform_expression(rhs)),
+	}))
 }

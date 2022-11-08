@@ -16,9 +16,7 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 				let returns = return_statement.returns();
 				match returns.len() {
 					0 => None,
-					1 => Some(boxed(
-						returns.iter().next().map(transform_expression).unwrap(),
-					)),
+					1 => Some(transform_expression(returns.iter().next().unwrap())),
 					_ => Some(boxed(Expr::TsAs(TsAsExpr {
 						span: Default::default(),
 						expr: boxed(Expr::Array(ArrayLit {
@@ -26,7 +24,6 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 							elems: returns
 								.iter()
 								.map(transform_expression)
-								.map(boxed)
 								.map(|expr| ExprOrSpread { spread: None, expr })
 								.map(Some)
 								.collect(),
@@ -38,7 +35,7 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 								optional: false,
 								sym: JsWord::from("LuaTuple"),
 							}),
-							type_params: Some(TsTypeParamInstantiation {
+							type_params: Some(boxed(TsTypeParamInstantiation {
 								span: Default::default(),
 								params: vec![boxed(TsType::TsTupleType(TsTupleType {
 									span: Default::default(),
@@ -48,7 +45,7 @@ pub fn transform_last_statement(stmt: &lua_ast::LastStmt) -> Stmt {
 										ty: skip_type("Can't infer return types", return_statement),
 									}],
 								}))],
-							}),
+							})),
 						})),
 					}))),
 				}

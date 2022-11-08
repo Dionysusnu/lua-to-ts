@@ -33,7 +33,7 @@ fn transform_function_name(name: &lua_ast::FunctionName) -> Expr {
 }
 
 pub fn transform_function_declaration(declaration: &lua_ast::FunctionDeclaration) -> Stmt {
-	let function = Function {
+	let function = boxed(Function {
 		span: Default::default(),
 		is_async: false,
 		is_generator: false,
@@ -58,7 +58,7 @@ pub fn transform_function_declaration(declaration: &lua_ast::FunctionDeclaration
 			span: Default::default(),
 			stmts: transform_block_statements(declaration.body().block()),
 		}),
-	};
+	});
 
 	let name = transform_function_name(declaration.name());
 	if let Expr::Ident(ident) = name {

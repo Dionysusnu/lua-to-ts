@@ -10,7 +10,7 @@ pub fn transform_assignment(assignment: &lua_ast::Assignment) -> Stmt {
 				span: Default::default(),
 				op: AssignOp::Assign,
 				left: if names.len() == 1 {
-					PatOrExpr::Expr(boxed(transform_var(names.iter().next().unwrap())))
+					PatOrExpr::Expr(transform_var(names.iter().next().unwrap()))
 				} else {
 					PatOrExpr::Pat(boxed(Pat::Array(ArrayPat {
 						span: Default::default(),
@@ -18,7 +18,7 @@ pub fn transform_assignment(assignment: &lua_ast::Assignment) -> Stmt {
 						type_ann: None,
 						elems: names
 							.iter()
-							.map(|name| Some(Pat::Expr(boxed(transform_var(name)))))
+							.map(|name| Some(Pat::Expr(transform_var(name))))
 							.collect(),
 					})))
 				},
@@ -31,13 +31,13 @@ pub fn transform_assignment(assignment: &lua_ast::Assignment) -> Stmt {
 								.map(|exp| {
 									Some(ExprOrSpread {
 										spread: None,
-										expr: boxed(transform_expression(exp)),
+										expr: transform_expression(exp),
 									})
 								})
 								.collect(),
 						}))
 					} else {
-						boxed(transform_expression(expressions.iter().next().unwrap()))
+						transform_expression(expressions.iter().next().unwrap())
 					}
 				},
 			}

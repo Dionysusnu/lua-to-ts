@@ -11,7 +11,7 @@ pub fn transform_generic_for(generic_for: &lua_ast::GenericFor) -> Stmt {
 	Stmt::ForOf(ForOfStmt {
 		span: Default::default(),
 		await_token: None,
-		left: VarDeclOrPat::VarDecl(VarDecl {
+		left: VarDeclOrPat::VarDecl(boxed(VarDecl {
 			span: Default::default(),
 			kind: VarDeclKind::Let,
 			declare: false,
@@ -27,7 +27,7 @@ pub fn transform_generic_for(generic_for: &lua_ast::GenericFor) -> Stmt {
 							.type_specifiers()
 							.any(|type_specifier| type_specifier.is_some())
 						{
-							Some(TsTypeAnn {
+							Some(boxed(TsTypeAnn {
 								span: Default::default(),
 								type_ann: boxed(TsType::TsTupleType(TsTupleType {
 									span: Default::default(),
@@ -52,15 +52,15 @@ pub fn transform_generic_for(generic_for: &lua_ast::GenericFor) -> Stmt {
 													transform_type(type_specifier.type_info())
 												})
 												.unwrap_or_else(|| {
-													TsType::TsKeywordType(TsKeywordType {
+													boxed(TsType::TsKeywordType(TsKeywordType {
 														span: Default::default(),
 														kind: TsKeywordTypeKind::TsAnyKeyword,
-													})
+													}))
 												}),
 										})
 										.collect(),
 								})),
-							})
+							}))
 						} else {
 							None
 						}
@@ -79,8 +79,8 @@ pub fn transform_generic_for(generic_for: &lua_ast::GenericFor) -> Stmt {
 						.collect(),
 				}),
 			}],
-		}),
-		right: boxed(transform_expression(expression.iter().next().unwrap())),
+		})),
+		right: transform_expression(expression.iter().next().unwrap()),
 		body: boxed(transform_block(generic_for.block())),
 	})
 }
